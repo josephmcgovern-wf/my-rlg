@@ -1,6 +1,16 @@
 #include "player.h"
 #include <iostream>
 
+int Player :: getLightRadius() {
+    int radius = DEFAULT_LIGHT_RADIUS;
+    int index = getIndexOfEquipmentType("LIGHT")[0];
+    Object * light_item = equipment[index];
+    if (light_item) {
+        radius += light_item->special_attribute;
+    }
+    return radius;
+}
+
 int Player :: getSpeed() {
     int my_speed = speed;
     for (size_t i = 0; i < equipment.size(); i++) {

@@ -138,6 +138,7 @@ void move_player();
 struct Room get_room_player_is_in();
 void move_monster(Monster * monster);
 void print_on_clear_screen(string message);
+bool cell_is_illuminated(Board_Cell cell);
 
 int main(int argc, char *args[]) {
     game_queue = new PriorityQueue();
@@ -913,11 +914,25 @@ void print_on_clear_screen(string message) {
 }
 
 void update_player_board() {
-    for (int y = player->y - 5; y <= player->y + 5; y++) {
-        for (int x = player->x - 5; x <= player->x + 5; x++) {
+    int light_radius = player->getLightRadius();
+    for (int y = player->y - light_radius; y <= player->y + light_radius; y++) {
+        for (int x = player->x - light_radius; x <= player->x + light_radius; x++) {
             player_board[y][x] = board[y][x];
         }
     }
+}
+
+bool cell_is_illuminated(Board_Cell cell) {
+    int light_radius = player->getLightRadius();
+    int min_y = player->y - light_radius;
+    int max_y = player->y + light_radius;
+    int min_x = player->x - light_radius;
+    int max_x = player->x + light_radius;
+    return (
+        min_x <= cell.x && cell.x <= max_x
+        &&
+        min_y <= cell.y && cell.y <= max_y
+    );
 }
 
 
@@ -954,6 +969,10 @@ void update_board_view(int ncurses_start_x, int ncurses_start_y) {
             }
             else {
                 Board_Cell cell = player_board[y][x];
+                bool is_illuminated = cell_is_illuminated(cell);
+                if (is_illuminated) {
+                    attron(A_BOLD);
+                }
                 if (cell.type.compare(TYPE_UPSTAIR) == 0) {
                     mvprintw(row, col, "<");
                 }
@@ -971,6 +990,9 @@ void update_board_view(int ncurses_start_x, int ncurses_start_y) {
                 }
                 else {
                     mvprintw(row, col, "F");
+                }
+                if (is_illuminated) {
+                    attroff(A_BOLD);
                 }
             }
             col ++;

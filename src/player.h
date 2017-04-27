@@ -12,6 +12,7 @@ class Player : public Character {
         static const int MAX_INVENTORY_SIZE = 10;
         static const int DEFAULT_MAX_CARRYING_WEIGHT = 250;
         static const int MAX_HITPOINTS = 500;
+        static const int DEFAULT_LIGHT_RADIUS = 5;
         vector<Object *> inventory;
         vector<Object *> equipment;
         int getIndexToSwapEquipmentWith(string type);
@@ -23,6 +24,7 @@ class Player : public Character {
     public:
         string getHudInfo();
         bool isOverEncumbered();
+        int getLightRadius();
         int getWeight();
         int getSpeed();
         int getAttackDamage();
