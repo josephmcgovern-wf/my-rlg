@@ -37,7 +37,7 @@ void Player :: addExperience(int xp) {
 }
 
 int Player :: getExperienceRequiredForNextLevel() {
-    return ceil(40 * pow(level + 1, 0.6));
+    return ceil(20 * pow(level + 1, 0.6));
 }
 
 int Player :: getLightRadius() {
@@ -113,7 +113,7 @@ int Player :: getAttackDamage() {
     int damage = dice->roll();
     int extra_damage = ceil(strength_level * 5);
     damage += extra_damage;
-    for (size_t i = 1; i < equipment.size(); i++) {
+    for (int i = 1; i < equipment.size(); i++) {
         Object * object = equipment[i];
         if (object && i != 2) { // ignore ranged
             damage += object->damage_bonus->roll();
@@ -133,7 +133,7 @@ int Player :: getRangedAttackDamage() {
 }
 
 bool Player :: canPickUpObject() {
-    return inventory.size() < (size_t) MAX_INVENTORY_SIZE;
+    return inventory.size() < MAX_INVENTORY_SIZE;
 }
 
 void Player :: addObjectToInventory (Object * object) {
@@ -306,10 +306,8 @@ bool Player :: hasRangedWeapon() {
 
 Player :: Player() : Character() {
     experience = 0;
-    //skill_points = 0;
-    //level = 1;
-    level = 3;
-    skill_points = 2;
+    skill_points = 0;
+    level = 1;
     attack_damage = new Numeric("0+1d4");
     speed = 30;
     strength_level = 0;
