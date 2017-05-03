@@ -23,6 +23,7 @@ class Player : public Character {
         int getMaxCarryWeight();
 
     public:
+        bool hasObject(Object *);
         string getHudInfo();
         bool isOverEncumbered();
         int getLightRadius();
@@ -47,6 +48,7 @@ class Player : public Character {
         void addExperience(int xp);
         int getExperienceRequiredForNextLevel();
         void levelUpSkill(string skill);
+        bool willDodgeAttack();
 
         // Variables
         int level;

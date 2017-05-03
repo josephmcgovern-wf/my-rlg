@@ -4,6 +4,22 @@
 #include <math.h>
 
 
+bool Player :: willDodgeAttack() {
+    int summed_chance = 0;
+    for (int i = 0; i < equipment.size(); i++) {
+        Object * object = equipment[i];
+        if (object) {
+            summed_chance += object->dodge_bonus;
+        }
+    }
+    int bonus = 0;
+    if (dexterity_level) {
+        bonus = ceil(pow(dexterity_level + 1, 1.5));
+    }
+    int chance = 1 + summed_chance + bonus;
+    return random_int(1, 100) <= chance;
+}
+
 int Player :: getMaxCarryWeight() {
     return DEFAULT_MAX_CARRYING_WEIGHT + ceil(strength_level * 50);
 }
@@ -41,7 +57,11 @@ int Player :: getExperienceRequiredForNextLevel() {
 }
 
 int Player :: getLightRadius() {
-    int radius = DEFAULT_LIGHT_RADIUS + ceil(intelligence_level * 1.5);
+    int bonus = 0;
+    if (intelligence_level) {
+        bonus = ceil(pow(intelligence_level + 1, 1.5));
+    }
+    int radius = DEFAULT_LIGHT_RADIUS + bonus;
     int index = getIndexOfEquipmentType("LIGHT")[0];
     Object * light_item = equipment[index];
     if (light_item) {
@@ -51,7 +71,11 @@ int Player :: getLightRadius() {
 }
 
 int Player :: getSpeed() {
-    int my_speed = speed + ceil(dexterity_level * 5);
+    int bonus = 0;
+    if (dexterity_level) {
+        bonus = ceil(pow(dexterity_level + 1, 1.8));
+    }
+    int my_speed = speed + bonus;
     for (size_t i = 0; i < equipment.size(); i++) {
         Object * object = equipment[i];
         if (object) {
@@ -111,6 +135,11 @@ int Player :: getAttackDamage() {
         dice = equipment[0]->damage_bonus;
     }
     int damage = dice->roll();
+
+    int bonus = 0;
+    if  (strength_level) {
+        bonus = strength_level + ceil(pow(strength_level + 1, 1.5));
+    }
     int extra_damage = ceil(strength_level * 5);
     damage += extra_damage;
     for (int i = 1; i < equipment.size(); i++) {
@@ -128,8 +157,11 @@ int Player :: getRangedAttackDamage() {
     }
     Object * range = equipment[2];
     int range_damage = range->damage_bonus->roll();
-    int extra_damage = ceil(dexterity_level * 5);
-    return range_damage + extra_damage;
+    int bonus = 0;
+    if (bonus) {
+        bonus = dexterity_level + ceil(pow(dexterity_level + 1, 1.5));
+    }
+    return range_damage + bonus;
 }
 
 bool Player :: canPickUpObject() {
@@ -298,6 +330,22 @@ void Player :: takeOffEquipment(int index) {
 
 void Player :: removeInventoryItemAt(int index) {
     inventory.erase(inventory.begin() + index);
+}
+
+bool Player :: hasObject(Object * o) {
+    for (int i = 0; i < inventory.size(); i++) {
+        Object * item = inventory[i];
+        if (item && item == o) {
+            return true;
+        }
+    }
+    for (int i = 0; i < equipment.size(); i++) {
+        Object * item = equipment[i];
+        if (item && item == o) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool Player :: hasRangedWeapon() {

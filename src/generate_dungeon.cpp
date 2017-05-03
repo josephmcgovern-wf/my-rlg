@@ -370,7 +370,8 @@ void generate_monsters_from_templates(int how_many) {
 
 void generate_objects_from_templates() {
     for (int i = 0; i < objects.size(); i++) {
-        if (objects[i]) {
+        Object * obj = objects[i];
+        if (obj && !player->hasObject(obj)) {
             delete(objects[i]);
         }
     }
@@ -1106,35 +1107,35 @@ int handle_ranged_mode_input() {
     while(true) {
         int key = getch();
         if (key == 107) { // k - one cell up
-            if (board[local_y - 1][local_x].hardness > 0 || abs(player->y - (local_y - 1)) > 5) {
+            if (board[local_y - 1][local_x].hardness > 0 || !cell_is_illuminated(board[local_y - 1][local_x])) {
                 continue;
             }
             new_coord.y --;
             local_y --;
         }
         else if (key == 106) { // j - one cell down
-            if (board[local_y + 1][local_x].hardness > 0 || abs(player->y - (local_y + 1)) > 5) {
+            if (board[local_y + 1][local_x].hardness > 0 || !cell_is_illuminated(board[local_y + 1][local_x])) {
                 continue;
             }
             new_coord.y ++;
             local_y ++;
         }
         else if (key == 104) { // h - one cell left
-            if (board[local_y][local_x - 1].hardness > 0 || abs(player->x - (local_x - 1)) > 5) {
+            if (board[local_y][local_x - 1].hardness > 0 || !cell_is_illuminated(board[local_y][local_x - 1])) {
                 continue;
             }
             new_coord.x --;
             local_x --;
         }
         else if(key == 108) { // l - one cell right
-            if (board[local_y][local_x + 1].hardness > 0 || abs(player->x - (local_x + 1)) > 5) {
+            if (board[local_y][local_x + 1].hardness > 0 || !cell_is_illuminated(board[local_y][local_x + 1])) {
                 continue;
             }
             new_coord.x ++;
             local_x ++;
         }
         else if (key == 121) { // y - one cell up-left
-            if (board[local_y - 1][local_x - 1].hardness > 0 || abs(player->x - (local_x - 1)) > 5 || abs(player->y - (local_y - 1)) > 5) {
+            if (board[local_y - 1][local_x - 1].hardness > 0 || !cell_is_illuminated(board[local_y - 1][local_x - 1])) {
                 continue;
             }
             new_coord.x --;
@@ -1143,7 +1144,7 @@ int handle_ranged_mode_input() {
             local_x --;
         }
         else if (key == 117) { // u - one cell up-right
-            if (board[local_y - 1][local_x + 1].hardness > 0 || abs(player->x - (local_x + 1)) > 5 || abs(player->y - (local_y - 1)) > 5) {
+            if (board[local_y - 1][local_x + 1].hardness > 0 || !cell_is_illuminated(board[local_y - 1][local_x + 1])) {
                 continue;
             }
             new_coord.x ++;
@@ -1152,7 +1153,7 @@ int handle_ranged_mode_input() {
             local_x ++;
         }
         else if (key == 110) { // n - one cell low-right
-            if (board[local_y + 1][local_x + 1].hardness > 0 || abs(player->x - (local_x + 1)) > 5 || abs(player->y - (local_y + 1)) > 5) {
+            if (board[local_y + 1][local_x + 1].hardness > 0 || !cell_is_illuminated(board[local_y + 1][local_x + 1])) {
                 continue;
             }
             new_coord.x ++;
@@ -1161,7 +1162,7 @@ int handle_ranged_mode_input() {
             local_y ++;
         }
         else if (key == 98) { // b - one cell low-left
-            if (board[local_y + 1][local_x - 1].hardness > 0 || abs(player->x - (local_x - 1)) > 5 || abs(player->y - (local_y + 1)) > 5) {
+            if (board[local_y + 1][local_x - 1].hardness > 0 || !cell_is_illuminated(board[local_y + 1][local_x - 1])) {
                 continue;
             }
             new_coord.x --;
@@ -1374,6 +1375,8 @@ int handle_user_input(int key) {
             if (player->canPickUpObject()) {
                 add_message("Moved " + equipment->type + " to inventory");
                 player->takeOffEquipment(index);
+                update_player_board();
+                center_board_on_player();
             }
             else {
                 add_message("Cannot take off " + equipment->type + "; no room in inventory. Try dropping it instead.");
@@ -1408,6 +1411,8 @@ int handle_user_input(int key) {
         Object * object = player->getInventoryItemAt(index);
         player->equipObjectAt(index);
         add_message("Equipped " + object->type + ": " + object->name);
+        update_player_board();
+        center_board_on_player();
         return 0;
     }
     else if(key == 105) { // i - list inventory
@@ -2308,9 +2313,14 @@ void move_monster(Monster * monster) {
     bool attacked_player = false;
     if (new_coord.y == player->y && new_coord.x == player->x) {
         attacked_player = true;
-        int damage = monster->getAttackDamage();
-        player->damage(damage);
-        add_message("Monster inflicted " + to_string(damage) + " points of damage on you!");
+        if (player->willDodgeAttack()) {
+            add_message("You dodge the monster's attack!");
+        }
+        else {
+            int damage = monster->getAttackDamage();
+            player->damage(damage);
+            add_message("Monster inflicted " + to_string(damage) + " points of damage on you!");
+        }
     }
     else if (new_coord.x != monster_x || new_coord.y != monster_y) {
         if (board[new_coord.y][new_coord.x].monster != NULL) {
