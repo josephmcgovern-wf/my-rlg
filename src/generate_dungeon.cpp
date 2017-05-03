@@ -216,11 +216,8 @@ int main(int argc, char *args[]) {
             if (monster == NULL) {
                 continue;
             }
-            // Remove this conditional
-            //if (monster_is_in_same_room_as_player(monster)) {
-                add_message("The monsters are moving towards you...");
-                move_monster(monster);
-            //}
+            add_message("The monsters are moving towards you...");
+            move_monster(monster);
             speed = monster->speed;
         }
         if (player->isAlive()) {

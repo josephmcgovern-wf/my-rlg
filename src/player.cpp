@@ -318,24 +318,7 @@ Player :: Player() : Character() {
     x = 0;
     y = 0;
     for (int i = 0; i < 12; i++) {
-        if (i == 0) {
-            Object * obj = new Object();
-            obj->name = "Sword";
-            obj->description = "Boss sword";
-            obj->type = "WEAPON";
-            obj->color = "BLUE";
-            obj->hit_bonus = 5;
-            obj->damage_bonus = new Numeric("50+20d10");
-            obj->defense_bonus = 5;
-            obj->weight = 15;
-            obj->speed_bonus = 0;
-            obj->special_attribute = 0;
-            obj->value = 1000;
-            equipment.push_back(obj);
-        }
-        else {
-            equipment.push_back(NULL);
-        }
+        equipment.push_back(NULL);
     }
 }
 
