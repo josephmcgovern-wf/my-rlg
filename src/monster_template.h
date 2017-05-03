@@ -18,10 +18,12 @@ class MonsterTemplate {
         vector<string> abilities;
         Numeric * hitpoints;
         Numeric * attack_damage;
+        Numeric * experience;
 
     public:
         Monster * makeMonster();
         bool isValid();
+        void setExperience(Numeric *);
         string getName();
         void setName(string);
         string getDescription();

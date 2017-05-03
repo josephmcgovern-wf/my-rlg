@@ -9,6 +9,7 @@ class Character {
         int speed;
         int max_hitpoints;
         int hitpoints;
+        int experience;
         Numeric * attack_damage;
         int x;
         int y;

@@ -3,7 +3,7 @@
 
 #include "character.h"
 
-class Monster : public Character{
+class Monster : public Character {
     public:
         string name;
         string description;

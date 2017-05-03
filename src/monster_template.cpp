@@ -4,6 +4,10 @@
 
 using namespace std;
 
+void MonsterTemplate :: setExperience(Numeric * xp) {
+    experience = xp;
+}
+
 string MonsterTemplate::getName() {
     return name;
 }
@@ -95,6 +99,7 @@ Monster * MonsterTemplate::makeMonster() {
     m->max_hitpoints = m->hitpoints;
     m->decimal_type = 0;
     m->attack_damage = attack_damage;
+    m->experience = experience->roll();
     return m;
 }
 

@@ -1,5 +1,20 @@
 #include "player.h"
 #include <iostream>
+#include <math.h>
+
+void Player :: addExperience(int xp) {
+    int xp_required = getExperienceRequiredForNextLevel();
+    experience += xp;
+    if (experience >= xp_required) {
+        int diff = experience - xp_required;
+        experience = diff;
+        level ++;
+    }
+}
+
+int Player :: getExperienceRequiredForNextLevel() {
+    return ceil(40 * pow(level + 1, 0.6));
+}
 
 int Player :: getLightRadius() {
     int radius = DEFAULT_LIGHT_RADIUS;
@@ -26,8 +41,10 @@ int Player :: getSpeed() {
 }
 
 string Player :: getHudInfo() {
-    string info = "Health: " + to_string(hitpoints) + "/" + to_string(MAX_HITPOINTS) + "\n";
-    info += "Carry: " + to_string(getWeight()) + "/" + to_string(DEFAULT_MAX_CARRYING_WEIGHT);
+    string info = "Level: " + to_string(level) + "\n";
+    info += "Health: " + to_string(hitpoints) + "/" + to_string(MAX_HITPOINTS) + "\n";
+    info += "Carry: " + to_string(getWeight()) + "/" + to_string(DEFAULT_MAX_CARRYING_WEIGHT) + "\n";
+    info += "XP: " + to_string(experience) + "/" + to_string(getExperienceRequiredForNextLevel());
     return info;
 
 }
@@ -256,30 +273,28 @@ bool Player :: hasRangedWeapon() {
 }
 
 Player :: Player() : Character() {
+    experience = 0;
+    level = 1;
     attack_damage = new Numeric("0+1d4");
-    speed = 10;
+    speed = 30;
     hitpoints = MAX_HITPOINTS;
     max_hitpoints = MAX_HITPOINTS;
     x = 0;
     y = 0;
     for (int i = 0; i < 12; i++) {
-        if (i == 2) {
+        if (i == 0) {
             Object * obj = new Object();
-            obj->type = "RANGED";
-            obj->description = "A very deadly sniper rifle";
-            obj->name = ".50 cal";
-            obj->color = "RED";
-            obj->x = 0;
-            obj->y = 0;
-            obj->hit_bonus = 50;
-            obj->damage_bonus = new Numeric("50+5d8");
-            obj->dodge_bonus = 50;
-            obj->defense_bonus = 50;
-            obj->weight = 50;
-            obj->speed_bonus = 50;
-            obj->special_attribute = 50;
-            obj->value = 50;
-
+            obj->name = "Sword";
+            obj->description = "Boss sword";
+            obj->type = "WEAPON";
+            obj->color = "BLUE";
+            obj->hit_bonus = 5;
+            obj->damage_bonus = new Numeric("50+20d10");
+            obj->defense_bonus = 5;
+            obj->weight = 15;
+            obj->speed_bonus = 0;
+            obj->special_attribute = 0;
+            obj->value = 1000;
             equipment.push_back(obj);
         }
         else {

@@ -41,14 +41,15 @@
 #define DEFAULT_MAX_ROOM_WIDTH 15
 #define MIN_ROOM_HEIGHT 5
 #define DEFAULT_MAX_ROOM_HEIGHT 10
-#define DEFAULT_NUMBER_OF_MONSTERS 5
+#define MIN_NUMBER_OF_MONSTERS 5
+#define MAX_NUMBER_OF_MONSTERS 50
 using namespace std;
 
-static string TYPE_ROOM = "room";
-static string TYPE_CORRIDOR = "corridor";
-static string TYPE_ROCK = "rock";
-static string TYPE_UPSTAIR = "upstair";
-static string TYPE_DOWNSTAIR = "downstair";
+static const string TYPE_ROOM = "room";
+static const string TYPE_CORRIDOR = "corridor";
+static const string TYPE_ROCK = "rock";
+static const string TYPE_UPSTAIR = "upstair";
+static const string TYPE_DOWNSTAIR = "downstair";
 
 typedef struct {
     int tunneling_distance;
@@ -93,22 +94,19 @@ static int DO_QUIT = 0;
 static int DO_SAVE = 0;
 static int DO_LOAD = 0;
 static int SHOW_HELP = 0;
-static int NUMBER_OF_ROOMS = 30; //MIN_NUMBER_OF_ROOMS;
 static int MAX_ROOM_WIDTH = DEFAULT_MAX_ROOM_WIDTH;
 static int MAX_ROOM_HEIGHT = DEFAULT_MAX_ROOM_HEIGHT;
-static int NUMBER_OF_MONSTERS = 100; //DEFAULT_NUMBER_OF_MONSTERS;
 
 void handle_killed_monster(Monster * monster);
 bool damage_monster(Monster * monster, int damage);
 void init_color_pairs();
-void generate_monsters_from_templates();
+void generate_monsters_from_templates(int how_many);
 void generate_objects_from_templates();
 void print_usage();
 struct Coordinate get_random_board_location();
 void make_rlg_directory();
 void make_monster_templates();
 void make_object_templates();
-void update_number_of_rooms();
 void generate_new_board();
 void generate_stairs();
 void initialize_board();
@@ -139,27 +137,20 @@ struct Room get_room_player_is_in();
 void move_monster(Monster * monster);
 void print_on_clear_screen(string message);
 bool cell_is_illuminated(Board_Cell cell);
+bool monster_is_in_same_room_as_player(Monster * m);
+
 
 int main(int argc, char *args[]) {
     game_queue = new PriorityQueue();
     player = new Player();
-    struct option longopts[] = {
-        {"save", no_argument, &DO_SAVE, 1},
+    struct option longopts[] = { {"save", no_argument, &DO_SAVE, 1},
         {"load", no_argument, &DO_LOAD, 1},
-        {"nummon", required_argument, NULL, 'm'},
         {"help", no_argument, &SHOW_HELP, 'h'},
         {0, 0, 0, 0}
     };
     int c;
     while((c = getopt_long(argc, args, "h:", longopts, NULL)) != -1) {
         switch(c) {
-            case 'm':
-                NUMBER_OF_MONSTERS =  atoi(optarg);
-                if (NUMBER_OF_MONSTERS < 1) {
-                    NUMBER_OF_MONSTERS = DEFAULT_NUMBER_OF_MONSTERS;
-                    printf("Number of monsters cannot be less than 1\n");
-                }
-                break;
             case 'h':
                 SHOW_HELP = 1;
                 break;
@@ -174,7 +165,6 @@ int main(int argc, char *args[]) {
     make_rlg_directory();
     make_monster_templates();
     make_object_templates();
-    update_number_of_rooms();
     generate_new_board();
     initscr();
     noecho();
@@ -226,8 +216,11 @@ int main(int argc, char *args[]) {
             if (monster == NULL) {
                 continue;
             }
-            add_message("The monsters are moving towards you...");
-            move_monster(monster);
+            // Remove this conditional
+            //if (monster_is_in_same_room_as_player(monster)) {
+                add_message("The monsters are moving towards you...");
+                move_monster(monster);
+            //}
             speed = monster->speed;
         }
         if (player->isAlive()) {
@@ -297,9 +290,9 @@ void init_color_pairs() {
     }
 }
 
-void generate_monsters_from_templates() {
+void generate_monsters_from_templates(int how_many) {
     monsters.clear();
-    while (monsters.size() < (size_t) NUMBER_OF_MONSTERS) {
+    while (monsters.size() < (size_t) how_many) {
         int i = random_int(0, monster_templates.size() - 1);
         struct Coordinate coordinate;
         MonsterTemplate monster_template = monster_templates[i];
@@ -371,17 +364,6 @@ void make_object_templates() {
     object_templates = p->getObjectTemplates();
 }
 
-void update_number_of_rooms() {
-    if (NUMBER_OF_ROOMS < MIN_NUMBER_OF_ROOMS) {
-        printf("Minimum number of rooms is %d\n", MIN_NUMBER_OF_ROOMS);
-        NUMBER_OF_ROOMS = MIN_NUMBER_OF_ROOMS;
-    }
-    if (NUMBER_OF_ROOMS > MAX_NUMBER_OF_ROOMS) {
-        printf("Maximum number of rooms is %d\n", MAX_NUMBER_OF_ROOMS);
-        NUMBER_OF_ROOMS = MAX_NUMBER_OF_ROOMS;
-    }
-}
-
 void generate_new_board() {
     initialize_board();
     rooms.clear();
@@ -390,7 +372,8 @@ void generate_new_board() {
         DO_LOAD = 0;
     }
     else {
-        dig_rooms(NUMBER_OF_ROOMS);
+        int num_rooms = random_int(MIN_NUMBER_OF_ROOMS, MAX_NUMBER_OF_ROOMS);
+        dig_rooms(num_rooms);
         dig_cooridors();
     }
 
@@ -399,7 +382,8 @@ void generate_new_board() {
     set_placeable_areas();
     set_non_tunneling_distance_to_player();
     set_tunneling_distance_to_player();
-    generate_monsters_from_templates();
+    int num_monsters = random_int(MIN_NUMBER_OF_MONSTERS, MAX_NUMBER_OF_MONSTERS);
+    generate_monsters_from_templates(num_monsters);
     generate_stairs();
     generate_objects_from_templates();
 }
@@ -525,7 +509,7 @@ void load_board() {
     uint8_t start_y;
     uint8_t width;
     uint8_t height;
-    NUMBER_OF_ROOMS = (file_size - ftell(fp)) / 4;
+    // NUMBER_OF_ROOMS = (file_size - ftell(fp)) / 4;
     int counter = 0;
     while(ftell(fp) != file_size) {
         fread(&start_x, 1, 1, fp);
@@ -1030,6 +1014,11 @@ void handle_user_input_for_look_mode(int key) {
 }
 
 void handle_killed_monster(Monster * monster) {
+    int prev_level = player->level;
+    player->addExperience(monster->experience);
+    if (player->level != prev_level) {
+        add_message("You leveled up!");
+    }
     game_queue->removeFromQueue(monster);
     board[monster->y][monster->x].monster = NULL;
     int index = -1;

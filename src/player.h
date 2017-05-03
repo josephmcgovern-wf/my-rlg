@@ -43,6 +43,9 @@ class Player : public Character {
         void takeOffEquipment(int index);
         void removeInventoryItemAt(int index);
         bool hasRangedWeapon();
+        void addExperience(int xp);
+        int getExperienceRequiredForNextLevel();
+        int level;
         Player();
         ~Player();
 };

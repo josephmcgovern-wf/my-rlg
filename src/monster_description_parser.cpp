@@ -12,6 +12,7 @@ const string ABILITIES_KEYWORD = "ABIL";
 const string HITPOINTS_KEYWORD = "HP";
 const string ATTACK_DAMAGE_KEYWORD = "DAM";
 const string SYMBOL_KEYWORD = "SYMB";
+const string EXPERIENCE_KEYWORD = "XP";
 
 MonsterDescriptionParser::MonsterDescriptionParser(string filepath) {
     this->filepath = filepath;
@@ -82,6 +83,11 @@ void MonsterDescriptionParser::parseFile() {
                 else if (starts_with(line, SYMBOL_KEYWORD)) {
                     line.erase(0, (SYMBOL_KEYWORD + " ").length());
                     current_monster->setSymbol(line[0]);
+                }
+                else if (starts_with(line, EXPERIENCE_KEYWORD)) {
+                    line.erase(0, (EXPERIENCE_KEYWORD + " ").length());
+                    Numeric * xp = new Numeric(line);
+                    current_monster->setExperience(xp);
                 }
                 else if (line.compare("END") == 0) {
                     if (current_monster->isValid()) {

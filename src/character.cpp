@@ -7,7 +7,7 @@ void Character :: damage(int amount) {
 
 void Character :: regenerateHealth(int turn) {
     int turn_delta = turn - turn_health_regenerated;
-    int regen = (max_hitpoints * 0.001) * turn_delta;
+    int regen = (max_hitpoints * 0.0001) * turn_delta;
     hitpoints = min(hitpoints + regen, max_hitpoints);
     turn_health_regenerated = turn;
 }
