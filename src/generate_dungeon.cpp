@@ -104,6 +104,8 @@ void generate_monsters_from_templates(int how_many);
 void generate_objects_from_templates();
 void print_usage();
 struct Coordinate get_random_board_location();
+void show_level_up_screen();
+string get_level_up_screen_message();
 void make_rlg_directory();
 void make_monster_templates();
 void make_object_templates();
@@ -182,7 +184,10 @@ int main(int argc, char *args[]) {
         int speed;
         if (character->is(player)) {
             string message = "It's your turn.";
-            if (player->isOverEncumbered()) {
+            if (player->skill_points) {
+                message += " Press ^ to level up.";
+            }
+            else if (player->isOverEncumbered()) {
                 message += " You are overencumbered and move very slowly!";
             }
             add_message(message);
@@ -1123,6 +1128,77 @@ int handle_ranged_mode_input() {
     return 0;
 }
 
+string get_level_up_screen_message() {
+    string message = "LEVEL UP\n";
+    message += "Strength: " + to_string(player->strength_level) + "\tDexterity: ";
+    message += to_string(player->dexterity_level) + "\tIntelligence: ";
+    message += to_string(player->intelligence_level);
+    message += "\n\nSelect skill to level up:\n";
+    message += "Strength\nDexterity\nIntelligence";
+    message += "\n\nSkill Points: " + to_string(player->skill_points);
+    message += "\n\n(Press esc to exit)";
+    return message;
+}
+
+void show_level_up_screen() {
+    clear();
+    string message = get_level_up_screen_message();
+    add_message(message);
+    int current_y = 4;
+    int prev_y = 4;
+    map<int, string> key_to_word_map;
+    key_to_word_map[4] = "Strength";
+    key_to_word_map[5] = "Dexterity";
+    key_to_word_map[6] = "Intelligence";
+    while (true) {
+        if (player->skill_points) {
+            mvprintw(prev_y, 0, key_to_word_map[prev_y].c_str());
+            attron(A_REVERSE);
+            mvprintw(current_y, 0, key_to_word_map[current_y].c_str());
+            attroff(A_REVERSE);
+        }
+        else {
+            curs_set(0);
+        }
+
+        prev_y = current_y;
+
+        int input = getch();
+        if (input == 27) { // Escape
+            break;
+        }
+        else if (input == 106) {  // k - up
+           current_y ++;
+        }
+        else if (input == 107) { // j - down
+            current_y --;
+        }
+        else if (input == 13 || input == 10) { // enter
+            if (player->skill_points == 0) {
+                continue;
+            }
+            try{
+                player->levelUpSkill(key_to_word_map[current_y]);
+            }
+            catch(exception &e) {
+                clear();
+                string message = get_level_up_screen_message();
+                add_message(message + "\n\nError: " + e.what());
+                continue;
+            }
+            clear();
+            string message = get_level_up_screen_message();
+            message += "\n\n" + key_to_word_map[current_y] + " increased!";
+            add_message(message);
+        }
+        current_y = max(current_y, 4);
+        current_y = min(current_y, 6);
+    }
+    center_board_on_player();
+    add_message("It's your turn");
+
+}
+
 int handle_user_input(int key) {
     struct Coordinate new_coord;
     new_coord.x = player->x;
@@ -1153,6 +1229,10 @@ int handle_user_input(int key) {
         message += player->viewInventoryObjectAt(index) + "\n\n";
         message += "(Press any key to return to game view)";
         print_on_clear_screen(message);
+        return 0;
+    }
+    else if (key == 94) { // ^ - level up
+        show_level_up_screen();
         return 0;
     }
     else if (key == 120) {

@@ -1,14 +1,38 @@
 #include "player.h"
+#include "util.h"
 #include <iostream>
 #include <math.h>
 
+
+int Player :: getMaxCarryWeight() {
+    return DEFAULT_MAX_CARRYING_WEIGHT + ceil(strength_level * 50);
+}
+
+void Player :: levelUpSkill(string skill) {
+    if (!skill.compare("Strength")) {
+        strength_level ++;
+    }
+    else if(!skill.compare("Dexterity")) {
+        dexterity_level ++;
+    }
+    else if(!skill.compare("Intelligence")) {
+        intelligence_level ++;
+    }
+    else {
+        throw "Invalid skill: " + skill;
+    }
+    skill_points --;
+}
+
 void Player :: addExperience(int xp) {
     int xp_required = getExperienceRequiredForNextLevel();
-    experience += xp;
+    int extra_xp = random_int(0, ceil(intelligence_level * 5));
+    experience += xp + extra_xp;
     if (experience >= xp_required) {
         int diff = experience - xp_required;
         experience = diff;
         level ++;
+        skill_points ++;
     }
 }
 
@@ -17,7 +41,7 @@ int Player :: getExperienceRequiredForNextLevel() {
 }
 
 int Player :: getLightRadius() {
-    int radius = DEFAULT_LIGHT_RADIUS;
+    int radius = DEFAULT_LIGHT_RADIUS + ceil(intelligence_level * 1.5);
     int index = getIndexOfEquipmentType("LIGHT")[0];
     Object * light_item = equipment[index];
     if (light_item) {
@@ -27,7 +51,7 @@ int Player :: getLightRadius() {
 }
 
 int Player :: getSpeed() {
-    int my_speed = speed;
+    int my_speed = speed + ceil(dexterity_level * 5);
     for (size_t i = 0; i < equipment.size(); i++) {
         Object * object = equipment[i];
         if (object) {
@@ -43,14 +67,18 @@ int Player :: getSpeed() {
 string Player :: getHudInfo() {
     string info = "Level: " + to_string(level) + "\n";
     info += "Health: " + to_string(hitpoints) + "/" + to_string(MAX_HITPOINTS) + "\n";
-    info += "Carry: " + to_string(getWeight()) + "/" + to_string(DEFAULT_MAX_CARRYING_WEIGHT) + "\n";
-    info += "XP: " + to_string(experience) + "/" + to_string(getExperienceRequiredForNextLevel());
+    info += "Carry: " + to_string(getWeight()) + "/" + to_string(getMaxCarryWeight()) + "\n";
+    info += "XP: " + to_string(experience) + "/" + to_string(getExperienceRequiredForNextLevel()) + "\n";
+    info += "Speed: " + to_string(getSpeed()) + "\n";
+    info += "Strength Level: " + to_string(strength_level) + "\n";
+    info += "Dexterity Level: " + to_string(dexterity_level) + "\n";
+    info += "Intelligence Level: " + to_string(intelligence_level) + "\n";
     return info;
 
 }
 
 bool Player :: isOverEncumbered() {
-   return getWeight() > DEFAULT_MAX_CARRYING_WEIGHT;
+    return getWeight() > getMaxCarryWeight();
 }
 
 int Player :: getEquipmentWeight() {
@@ -83,6 +111,8 @@ int Player :: getAttackDamage() {
         dice = equipment[0]->damage_bonus;
     }
     int damage = dice->roll();
+    int extra_damage = ceil(strength_level * 5);
+    damage += extra_damage;
     for (size_t i = 1; i < equipment.size(); i++) {
         Object * object = equipment[i];
         if (object && i != 2) { // ignore ranged
@@ -97,7 +127,9 @@ int Player :: getRangedAttackDamage() {
         return 0;
     }
     Object * range = equipment[2];
-    return range->damage_bonus->roll();
+    int range_damage = range->damage_bonus->roll();
+    int extra_damage = ceil(dexterity_level * 5);
+    return range_damage + extra_damage;
 }
 
 bool Player :: canPickUpObject() {
@@ -274,9 +306,15 @@ bool Player :: hasRangedWeapon() {
 
 Player :: Player() : Character() {
     experience = 0;
-    level = 1;
+    //skill_points = 0;
+    //level = 1;
+    level = 3;
+    skill_points = 2;
     attack_damage = new Numeric("0+1d4");
     speed = 30;
+    strength_level = 0;
+    dexterity_level = 0;
+    intelligence_level = 0;
     hitpoints = MAX_HITPOINTS;
     max_hitpoints = MAX_HITPOINTS;
     x = 0;

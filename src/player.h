@@ -20,6 +20,7 @@ class Player : public Character {
         string getEquipmentTypeFromIndex(int index);
         int getEquipmentWeight();
         int getInventoryWeight();
+        int getMaxCarryWeight();
 
     public:
         string getHudInfo();
@@ -45,7 +46,16 @@ class Player : public Character {
         bool hasRangedWeapon();
         void addExperience(int xp);
         int getExperienceRequiredForNextLevel();
+        void levelUpSkill(string skill);
+
+        // Variables
         int level;
+        int skill_points;
+        int strength_level;
+        int dexterity_level;
+        int intelligence_level;
+
+        // Constructors
         Player();
         ~Player();
 };
