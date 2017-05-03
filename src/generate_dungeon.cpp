@@ -135,6 +135,7 @@ void move_monster(Monster * monster);
 void print_on_clear_screen(string message);
 bool cell_is_illuminated(Board_Cell cell);
 bool monster_is_in_same_room_as_player(Monster * m);
+bool is_in_line_of_sight(struct Coordinate coord1, struct Coordinate coord2);
 
 
 int main(int argc, char *args[]) {
@@ -255,6 +256,56 @@ int main(int argc, char *args[]) {
     object_templates.clear();
 
     return 0;
+}
+
+bool is_in_line_of_sight(struct Coordinate start_coord, struct Coordinate end_coord) {
+    /*
+     *  This is Bresenham's line algorithm. It can be found here:
+     *  http://www.roguebasin.com/index.php?title=Bresenham%27s_Line_Algorithm#C.2B.2B
+     */
+    int x1 = start_coord.x;
+    int x2 = end_coord.x;
+    int y1 = start_coord.y;
+    int y2 = end_coord.y;
+    int delta_x = (end_coord.x - start_coord.x);
+    signed char const ix = (delta_x > 0) - (delta_x < 0);
+    delta_x = abs(delta_x) << 1;
+
+    int delta_y = (end_coord.y - start_coord.y);
+    signed char const iy = (delta_y > 0) - (delta_y < 0);
+    delta_y = abs(delta_y) << 1;
+
+    if (delta_x >= delta_y) {
+        int error = delta_y - (delta_x >> 1);
+        while(x1 != x2) {
+            if (error >= 0 && (error || (ix > 0))) {
+                error -= delta_x;
+                y1 += iy;
+            }
+
+            error += delta_y;
+            x1 += ix;
+            if (board[y1][x1].hardness > 0) {
+                return false;
+            }
+        }
+    }
+    else {
+        int error = delta_x - (delta_y >> 1);
+        while(y1 != y2) {
+            if (error >= 0 && (error || (iy > 0))) {
+                error -= delta_y;
+                x1 += ix;
+            }
+
+            error += delta_x;
+            y1 += iy;
+            if (board[y1][x1].hardness > 0) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 bool damage_monster(Monster * monster, int damage) {
@@ -889,15 +940,34 @@ void print_on_clear_screen(string message) {
 }
 
 void update_player_board() {
+    struct Coordinate p_coord;
+    p_coord.x = player->x;
+    p_coord.y = player->y;
+
     int light_radius = player->getLightRadius();
     for (int y = player->y - light_radius; y <= player->y + light_radius; y++) {
         for (int x = player->x - light_radius; x <= player->x + light_radius; x++) {
+            struct Coordinate cell_coord;
+            cell_coord.y = y;
+            cell_coord.x = x;
+            if (!is_in_line_of_sight(p_coord, cell_coord)) {
+                continue;
+            }
             player_board[y][x] = board[y][x];
         }
     }
 }
 
 bool cell_is_illuminated(Board_Cell cell) {
+    struct Coordinate p_coord;
+    p_coord.x = player->x;
+    p_coord.y = player->y;
+    struct Coordinate cell_coord;
+    cell_coord.x = cell.x;
+    cell_coord.y = cell.y;
+    if (!is_in_line_of_sight(p_coord, cell_coord)) {
+        return false;
+    }
     int light_radius = player->getLightRadius();
     int min_y = player->y - light_radius;
     int max_y = player->y + light_radius;
@@ -1933,7 +2003,7 @@ void move_monster(Monster * monster) {
     player_coord.y = player->y;
     switch(decimal_type) {
         case 0: // nothing
-            if (monster_is_in_same_room_as_player(monster)) {
+            if (is_in_line_of_sight(monster_coord, player_coord)) {
                 new_coord = get_straight_path_to(monster, player_coord);
             }
             else {
@@ -1941,7 +2011,7 @@ void move_monster(Monster * monster) {
             }
             break;
         case 1: // intelligent
-            if (monster_is_in_same_room_as_player(monster)) {
+            if (is_in_line_of_sight(monster_coord, player_coord)) {
                 monster->last_known_player_x = player->x;
                 monster->last_known_player_y = player->y;
                 new_coord = get_straight_path_to(monster, player_coord);
@@ -1969,7 +2039,7 @@ void move_monster(Monster * monster) {
             new_coord.y = cell.y;
             break;
         case 4: // tunneling
-            if (monster_is_in_same_room_as_player(monster)) {
+            if (is_in_line_of_sight(monster_coord, player_coord)) {
                 new_coord = get_straight_path_to(monster, player_coord);
             }
             else {
@@ -1991,7 +2061,7 @@ void move_monster(Monster * monster) {
             }
             break;
         case 5: // tunneling + intelligent
-            if (monster_is_in_same_room_as_player(monster)) {
+            if (is_in_line_of_sight(monster_coord, player_coord)) {
                 monster->last_known_player_x = player->x;
                 monster->last_known_player_y = player->y;
                 new_coord = get_straight_path_to(monster, player_coord);
@@ -2060,7 +2130,7 @@ void move_monster(Monster * monster) {
                 new_coord = get_random_new_non_tunneling_location(monster_coord);
             }
             else {
-                if (monster_is_in_same_room_as_player(monster)) {
+                if (is_in_line_of_sight(monster_coord, player_coord)) {
                     new_coord = get_straight_path_to(monster, player_coord);
                 }
                 else {
@@ -2073,7 +2143,7 @@ void move_monster(Monster * monster) {
                 new_coord = get_random_new_non_tunneling_location(monster_coord);
             }
             else {
-                if (monster_is_in_same_room_as_player(monster)) {
+                if (is_in_line_of_sight(monster_coord, player_coord)) {
                     monster->last_known_player_x = player->x;
                     monster->last_known_player_y = player->y;
                     new_coord = get_straight_path_to(monster, player_coord);
@@ -2128,7 +2198,7 @@ void move_monster(Monster * monster) {
                 new_coord = get_random_new_non_tunneling_location(monster_coord);
             }
             else {
-                if (monster_is_in_same_room_as_player(monster)) {
+                if (is_in_line_of_sight(monster_coord, player_coord)) {
                     new_coord = get_straight_path_to(monster, player_coord);
                 }
                 else {
@@ -2155,7 +2225,7 @@ void move_monster(Monster * monster) {
                 new_coord = get_random_new_non_tunneling_location(monster_coord);
             }
             else {
-                if (monster_is_in_same_room_as_player(monster)) {
+                if (is_in_line_of_sight(monster_coord, player_coord)) {
                     monster->last_known_player_x = player->x;
                     monster->last_known_player_y = player->y;
                     new_coord = get_straight_path_to(monster, player_coord);
