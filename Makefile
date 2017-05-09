@@ -1,6 +1,6 @@
 CC = g++
 
-CFLAGS = -Wall -Werror -ggdb
+CFLAGS = -Wall -Werror -ggdb -std=c++11
 
 SOURCES = $(wildcard src/*.cpp)
 OBJECTS = $(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)

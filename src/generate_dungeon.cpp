@@ -16,6 +16,7 @@
 #include <exception>
 #include <map>
 #include <cmath>
+#include <thread>
 
 #include "util.h"
 #include "monster.h"
@@ -24,6 +25,7 @@
 #include "monster_template.h"
 #include "object_description_parser.h"
 #include "player.h"
+#include "message.h"
 
 #include "priority_queue.h"
 
@@ -82,6 +84,7 @@ static vector<ObjectTemplate> object_templates;
 static PriorityQueue game_queue;
 static map<string, int> color_map;
 static Player * player;
+static vector<Message *> all_messages;
 
 string RLG_DIRECTORY = "";
 static int IS_CONTROL_MODE = 1;
@@ -92,6 +95,7 @@ static int SHOW_HELP = 0;
 static int MAX_ROOM_WIDTH = DEFAULT_MAX_ROOM_WIDTH;
 static int MAX_ROOM_HEIGHT = DEFAULT_MAX_ROOM_HEIGHT;
 
+void add_temp_message(string message);
 void handle_killed_monster(Monster * monster);
 bool damage_monster(Monster * monster, int damage);
 void init_color_pairs();
@@ -186,7 +190,7 @@ int main(int argc, char *args[]) {
             else if (player->isOverEncumbered()) {
                 message += " You are overencumbered and move very slowly!";
             }
-            add_message(message);
+            add_temp_message(message);
             int success = 0;
             while (!success) {
                 int ch = getch();
@@ -217,7 +221,7 @@ int main(int argc, char *args[]) {
             if (monster == NULL) {
                 continue;
             }
-            add_message("The monsters are moving towards you...");
+            add_temp_message("The monsters are moving towards you...");
             move_monster(monster);
             speed = monster->speed;
         }
@@ -924,6 +928,14 @@ void print_tunneling_board() {
 }
 
 void add_message(string message) {
+    add_temp_message(message);
+    Message * my_message = new Message(message);
+    if (all_messages.size() == 0 || all_messages[0]->message.compare(message)) {
+        all_messages.insert(all_messages.begin(), my_message);
+    }
+}
+
+void add_temp_message(string message) {
     move(0,0);
     clrtoeol();
     mvprintw(0, 0, "%s", message.c_str());
@@ -934,10 +946,11 @@ void add_message(string message) {
 void print_on_clear_screen(string message) {
     curs_set(0);
     clear();
-    add_message(message);
+    add_temp_message(message);
     getch();
+    clear();
     center_board_on_player();
-    add_message("It's your turn");
+    add_temp_message("It's your turn");
 }
 
 void update_player_board() {
@@ -1066,7 +1079,7 @@ void handle_user_input_for_look_mode(int key) {
     else if (key == 27) { // escape - enter control mode
         IS_CONTROL_MODE = 1;
         center_board_on_player();
-        add_message("It's your turn");
+        add_temp_message("It's your turn");
         return;
     }
     else if (key == 81) { // Q - quit
@@ -1171,7 +1184,7 @@ int handle_ranged_mode_input() {
             local_y ++;
         }
         else if (key == 27 || key == 81) { // escape - exit
-            add_message("Exited ranged mode. It's still your turn");
+            add_temp_message("Exited ranged mode. It's still your turn");
             return 0;
         }
         else if (key == 13 || key == 10) { // carriage return
@@ -1203,7 +1216,7 @@ string get_level_up_screen_message() {
 void show_level_up_screen() {
     clear();
     string message = get_level_up_screen_message();
-    add_message(message);
+    add_temp_message(message);
     int current_y = 4;
     int prev_y = 4;
     map<int, string> key_to_word_map;
@@ -1243,20 +1256,19 @@ void show_level_up_screen() {
             catch(exception &e) {
                 clear();
                 string message = get_level_up_screen_message();
-                add_message(message + "\n\nError: " + e.what());
+                add_temp_message(message + "\n\nError: " + e.what());
                 continue;
             }
             clear();
             string message = get_level_up_screen_message();
             message += "\n\n" + key_to_word_map[current_y] + " increased!";
-            add_message(message);
+            add_temp_message(message);
         }
         current_y = max(current_y, 4);
         current_y = min(current_y, 6);
     }
     center_board_on_player();
-    add_message("It's your turn");
-
+    add_temp_message("It's your turn");
 }
 
 int handle_user_input(int key) {
@@ -1266,7 +1278,7 @@ int handle_user_input(int key) {
     string str = "";
     if (key == 73) { // I - examine inventory
         string title = "Which inventory index? ";
-        add_message(title);
+        add_temp_message(title);
         move(0, title.length());
         char arr[80];
         echo();
@@ -1278,11 +1290,11 @@ int handle_user_input(int key) {
             index = stoi(str);
         }
         catch(...) {
-            add_message("Invalid input. It's your turn");
+            add_temp_message("Invalid input. It's your turn");
             return 0;
         }
         if (index > player->getNumberOfItemsInInventory() - 1 || index < 0) {
-            add_message("No inventory item at that index. It's your turn");
+            add_temp_message("No inventory item at that index. It's your turn");
             return 0;
         }
         string message = "Inventory item " + to_string(index) + ":\n";
@@ -1295,9 +1307,21 @@ int handle_user_input(int key) {
         show_level_up_screen();
         return 0;
     }
+
+    else if (key == 77) { // M - show messages
+        string logs = "";
+        for(int i = 0; i < all_messages.size(); i++) {
+            logs += all_messages[i]->toString() + "\n";
+        }
+        string message = "MESSAGES\n\n";
+        message += logs + "\n\n";
+        message += "(Press any key to return to game view)";
+        print_on_clear_screen(message);
+        return 0;
+    }
     else if (key == 120) {
         string title = "Which inventory index? ";
-        add_message(title);
+        add_temp_message(title);
         move(0, title.length());
         char arr[80];
         echo();
@@ -1309,16 +1333,16 @@ int handle_user_input(int key) {
             index = stoi(str);
         }
         catch(...) {
-            add_message("Invalid input. It's your turn");
+            add_temp_message("Invalid input. It's your turn");
             return 0;
         }
         if (index > player->getNumberOfItemsInInventory() - 1 || index < 0) {
-            add_message("No inventory item at that index. It's your turn");
+            add_temp_message("No inventory item at that index. It's your turn");
             return 0;
         }
         Object * object = player->getInventoryItemAt(index);
         player->removeInventoryItemAt(index);
-        add_message("Expunged " + object->name + " from the game. It's your turn");
+        add_temp_message("Expunged " + object->name + " from the game. It's your turn");
         if (object) {
             delete object;
         }
@@ -1327,7 +1351,7 @@ int handle_user_input(int key) {
     }
     else if (key == 100) { // d - drop item
         string title = "Which inventory index? ";
-        add_message(title);
+        add_temp_message(title);
         move(0, title.length());
         char arr[80];
         echo();
@@ -1339,11 +1363,11 @@ int handle_user_input(int key) {
             index = stoi(str);
         }
         catch(...) {
-            add_message("Invalid input. It's your turn");
+            add_temp_message("Invalid input. It's your turn");
             return 0;
         }
         if (index > player->getNumberOfItemsInInventory() - 1 || index < 0) {
-            add_message("No inventory item at that index. It's your turn");
+            add_temp_message("No inventory item at that index. It's your turn");
             return 0;
         }
         Object * object = player->getInventoryItemAt(index);
@@ -1367,7 +1391,7 @@ int handle_user_input(int key) {
             index = stoi(str);
         }
         catch(...) {
-            add_message("Invalid input. It's your turn");
+            add_temp_message("Invalid input. It's your turn");
             return 0;
         }
         if (player->equipmentExistsAt(index)) {
@@ -1383,13 +1407,13 @@ int handle_user_input(int key) {
             }
         }
         else {
-            add_message("No equipment item at that index. It's your turn");
+            add_temp_message("No equipment item at that index. It's your turn");
         }
         return 0;
     }
     else if (key == 119) { // w - wear item
         string title = "Which inventory index? ";
-        add_message(title);
+        add_temp_message(title);
         move(0, title.length());
         char arr[80];
         echo();
@@ -1401,11 +1425,11 @@ int handle_user_input(int key) {
             index = stoi(str);
         }
         catch(...) {
-            add_message("Invalid input. It's your turn");
+            add_temp_message("Invalid input. It's your turn");
             return 0;
         }
         if (index > player->getNumberOfItemsInInventory() - 1 || index < 0) {
-            add_message("No inventory item at that index. It's your turn");
+            add_temp_message("No inventory item at that index. It's your turn");
             return 0;
         }
         Object * object = player->getInventoryItemAt(index);
@@ -1449,10 +1473,10 @@ int handle_user_input(int key) {
     }
     else if (key == 114) { // r - ranged combat
         if (!player->hasRangedWeapon()) {
-            add_message("You have no ranged weapon. It's still your turn");
+            add_temp_message("You have no ranged weapon. It's still your turn");
             return 0;
         }
-        add_message("Entered ranged mode");
+        add_temp_message("Entered ranged mode");
         return handle_ranged_mode_input();
     }
     else if (key == 107 || key == 8) { // k - one cell up
@@ -1534,7 +1558,7 @@ int handle_user_input(int key) {
         add_message("You rest");
     }
     else if (key == 76 && IS_CONTROL_MODE) { // L - enter look mode
-        add_message("Entering look mode");
+        add_temp_message("Entering look mode");
         IS_CONTROL_MODE = 0;
     }
     else if (key == 81) { // Q - quit
