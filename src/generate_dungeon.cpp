@@ -142,6 +142,7 @@ bool cell_is_illuminated(Board_Cell cell);
 bool monster_is_in_same_room_as_player(Monster * m);
 bool is_in_line_of_sight(struct Coordinate coord1, struct Coordinate coord2);
 void update_board_distances();
+void update_distances_on_interval();
 
 
 int main(int argc, char *args[]) {
@@ -177,6 +178,8 @@ int main(int argc, char *args[]) {
     center_board_on_player();
     move(ncurses_player_coord.y, ncurses_player_coord.x);
     refresh();
+    thread t(update_distances_on_interval);
+    t.detach();
     int game_turn = 1;
     while(monsters.size() > 0 && player->isAlive() && !DO_QUIT) {
         center_board_on_player();
@@ -216,8 +219,12 @@ int main(int argc, char *args[]) {
             }
             //update_board_distances();
 
-            thread t(update_board_distances);
-            t.detach();
+            /*
+            if (random_int(0, 3) == 0) {
+                thread t(update_board_distances);
+                t.detach();
+            }
+            */
             /*
             update_non_tunneling_distance_in_background();
             update_tunneling_distance_in_background();
@@ -270,6 +277,12 @@ int main(int argc, char *args[]) {
     return 0;
 }
 
+void update_distances_on_interval() {
+    while(1) {
+        update_board_distances();
+        usleep(1500000);
+    }
+}
 void update_board_distances() {
     set_non_tunneling_distance_to_player();
     set_tunneling_distance_to_player();
@@ -1342,7 +1355,7 @@ int handle_user_input(int key) {
         print_on_clear_screen(message);
         return 0;
     }
-    else if (key == 120) {
+    else if (key == 120) { // x - expunge
         string title = "Which inventory index? ";
         add_temp_message(title);
         move(0, title.length());

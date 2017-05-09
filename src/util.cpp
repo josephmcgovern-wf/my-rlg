@@ -58,6 +58,11 @@ string vector_to_string(vector<string> vec) {
 int random_int(int min_num, int max_num) {
     random_device rd;
     mt19937 rng(rd());
+    if (min_num > max_num) {
+       int tmp = min_num;
+       min_num = max_num;
+       max_num = tmp;
+    }
     uniform_int_distribution<int> uni(min_num, max_num);
     return uni(rng);
 }
