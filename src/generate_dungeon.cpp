@@ -141,8 +141,7 @@ void print_on_clear_screen(string message);
 bool cell_is_illuminated(Board_Cell cell);
 bool monster_is_in_same_room_as_player(Monster * m);
 bool is_in_line_of_sight(struct Coordinate coord1, struct Coordinate coord2);
-void update_non_tunneling_distance_in_background();
-void update_tunneling_distance_in_background();
+void update_board_distances();
 
 
 int main(int argc, char *args[]) {
@@ -186,22 +185,14 @@ int main(int argc, char *args[]) {
         Character * character = min.character;
         int speed;
         if (character->is(player)) {
-            string message = "";
+            string message = "It's your turn.";
             if (player->skill_points) {
-                message += "Press ^ to level up.";
+                message += " Press ^ to level up.";
             }
             else if (player->isOverEncumbered()) {
-                if (message.empty()) {
-                    message += "You are overencumbered and move very slowly!";
-                }
-                else {
-
-                    message += " You are overencumbered and move very slowly!";
-                }
+                message += " You are overencumbered and move very slowly!";
             }
-            if (!message.empty()) {
-                add_temp_message(message);
-            }
+            add_temp_message(message);
             int success = 0;
             while (!success) {
                 int ch = getch();
@@ -223,8 +214,14 @@ int main(int argc, char *args[]) {
             if (success == 2) {
                 continue;
             }
+            //update_board_distances();
+
+            thread t(update_board_distances);
+            t.detach();
+            /*
             update_non_tunneling_distance_in_background();
             update_tunneling_distance_in_background();
+            */
             speed = player->getSpeed();
         }
         else {
@@ -273,6 +270,10 @@ int main(int argc, char *args[]) {
     return 0;
 }
 
+void update_board_distances() {
+    set_non_tunneling_distance_to_player();
+    set_tunneling_distance_to_player();
+}
 void update_non_tunneling_distance_in_background() {
     thread t(set_non_tunneling_distance_to_player);
     t.detach();
@@ -2102,13 +2103,11 @@ void move_monster(Monster * monster) {
                 if (board[cell.y][cell.x].hardness <= 0) {
                     board[cell.y][cell.x].hardness = 0;
                     board[cell.y][cell.x].type = TYPE_CORRIDOR;
-                    update_non_tunneling_distance_in_background();
                 }
                 else {
                     new_coord.x = monster_x;
                     new_coord.y = monster_y;
                 }
-                update_tunneling_distance_in_background();
             }
             break;
         case 5: // tunneling + intelligent
@@ -2131,13 +2130,11 @@ void move_monster(Monster * monster) {
                     if (board[cell.y][cell.x].hardness <= 0) {
                         board[cell.y][cell.x].hardness = 0;
                         board[cell.y][cell.x].type = TYPE_CORRIDOR;
-                        update_non_tunneling_distance_in_background();
                     }
                     else {
                         new_coord.x = monster_x;
                         new_coord.y = monster_y;
                     }
-                    update_tunneling_distance_in_background();
                 }
             }
             break;
@@ -2149,13 +2146,11 @@ void move_monster(Monster * monster) {
                 if (board[cell.y][cell.x].hardness <= 0) {
                     board[cell.y][cell.x].hardness = 0;
                     board[cell.y][cell.x].type = TYPE_CORRIDOR;
-                    update_non_tunneling_distance_in_background();
                 }
                 else {
                     new_coord.x = monster_x;
                     new_coord.y = monster_y;
                 }
-                update_tunneling_distance_in_background();
             }
             break;
         case 7: // tunneling + telepathic + intelligent
@@ -2167,13 +2162,11 @@ void move_monster(Monster * monster) {
                 if (board[cell.y][cell.x].hardness <= 0) {
                     board[cell.y][cell.x].hardness = 0;
                     board[cell.y][cell.x].type = TYPE_CORRIDOR;
-                    update_non_tunneling_distance_in_background();
                 }
                 else {
                     new_coord.x = monster_x;
                     new_coord.y = monster_y;
                 }
-                update_tunneling_distance_in_background();
             }
             break;
         case 8: // erratic
@@ -2234,13 +2227,11 @@ void move_monster(Monster * monster) {
                     if (board[cell.y][cell.x].hardness <= 0) {
                         board[cell.y][cell.x].hardness = 0;
                         board[cell.y][cell.x].type = TYPE_CORRIDOR;
-                        update_non_tunneling_distance_in_background();
                     }
                     else {
                         new_coord.x = monster_x;
                         new_coord.y = monster_y;
                     }
-                    update_tunneling_distance_in_background();
                 }
             }
             break;
@@ -2261,13 +2252,11 @@ void move_monster(Monster * monster) {
                     if (board[cell.y][cell.x].hardness <= 0) {
                         board[cell.y][cell.x].hardness = 0;
                         board[cell.y][cell.x].type = TYPE_CORRIDOR;
-                        update_non_tunneling_distance_in_background();
                     }
                     else {
                         new_coord.x = monster_x;
                         new_coord.y = monster_y;
                     }
-                    update_tunneling_distance_in_background();
                 }
             }
             break;
@@ -2295,13 +2284,11 @@ void move_monster(Monster * monster) {
                         if (board[cell.y][cell.x].hardness <= 0) {
                             board[cell.y][cell.x].hardness = 0;
                             board[cell.y][cell.x].type = TYPE_CORRIDOR;
-                            update_non_tunneling_distance_in_background();
                         }
                         else {
                             new_coord.x = monster_x;
                             new_coord.y = monster_y;
                         }
-                        update_tunneling_distance_in_background();
                     }
                 }
             }
@@ -2318,13 +2305,11 @@ void move_monster(Monster * monster) {
                     if (board[cell.y][cell.x].hardness <= 0) {
                         board[cell.y][cell.x].hardness = 0;
                         board[cell.y][cell.x].type = TYPE_CORRIDOR;
-                        update_non_tunneling_distance_in_background();
                     }
                     else {
                         new_coord.x = monster_x;
                         new_coord.y = monster_y;
                     }
-                    update_tunneling_distance_in_background();
                 }
             }
             break;
@@ -2341,13 +2326,11 @@ void move_monster(Monster * monster) {
                     if (board[cell.y][cell.x].hardness <= 0) {
                         board[cell.y][cell.x].hardness = 0;
                         board[cell.y][cell.x].type = TYPE_CORRIDOR;
-                        update_non_tunneling_distance_in_background();
                     }
                     else {
                         new_coord.x = monster_x;
                         new_coord.y = monster_y;
                     }
-                    update_tunneling_distance_in_background();
                 }
             }
             break;
