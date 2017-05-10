@@ -49,6 +49,7 @@ class Player : public Character {
         int getExperienceRequiredForNextLevel();
         void levelUpSkill(string skill);
         bool willDodgeAttack();
+        int getDefense();
 
         // Variables
         int level;

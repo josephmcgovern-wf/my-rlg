@@ -1,8 +1,15 @@
 #include "character.h"
 #include "util.h"
 
-void Character :: damage(int amount) {
-    hitpoints -= amount;
+int Character :: damage(int amount) {
+    int with_defense = amount - getDefense();
+    int actual_amount = max(0, with_defense);
+    hitpoints -= actual_amount;
+    return actual_amount;
+}
+
+int Character :: getDefense() {
+    return 0;
 }
 
 void Character :: regenerateHealth(int turn) {

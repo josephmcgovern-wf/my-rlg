@@ -4,6 +4,21 @@
 #include <math.h>
 
 
+int Player :: getDefense() {
+    int defense = 0;
+    for (int i = 0; i < equipment.size(); i++) {
+        Object * item = equipment[i];
+        if (item) {
+            defense += item->defense_bonus;
+        }
+    }
+    int bonus = 0;
+    if  (strength_level) {
+        bonus = random_int(0, strength_level + ceil(pow(strength_level + 1, 1.5)));
+    }
+    return bonus + defense;
+}
+
 bool Player :: willDodgeAttack() {
     int summed_chance = 0;
     for (int i = 0; i < equipment.size(); i++) {
@@ -357,7 +372,7 @@ Player :: Player() : Character() {
     skill_points = 0;
     level = 1;
     attack_damage = new Numeric("0+1d10");
-    speed = 30;
+    speed = 20;
     strength_level = 0;
     dexterity_level = 0;
     intelligence_level = 0;

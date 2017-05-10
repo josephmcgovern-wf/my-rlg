@@ -13,10 +13,11 @@ class Character {
         Numeric * attack_damage;
         int x;
         int y;
-        void damage(int amount);
+        int damage(int amount);
         bool isAlive();
         bool is(Character * other);
         void regenerateHealth(int turn);
+        int getDefense();
         Character();
 };
 #endif

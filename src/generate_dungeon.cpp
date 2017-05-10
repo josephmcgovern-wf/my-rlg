@@ -2360,8 +2360,8 @@ void move_monster(Monster * monster) {
         }
         else {
             int damage = monster->getAttackDamage();
-            player->damage(damage);
-            add_message("Monster inflicted " + to_string(damage) + " points of damage on you!");
+            int actual_damage = player->damage(damage);
+            add_message("Monster inflicted " + to_string(actual_damage) + " points of damage on you!");
         }
     }
     else if (new_coord.x != monster_x || new_coord.y != monster_y) {
