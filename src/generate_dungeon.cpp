@@ -1364,7 +1364,8 @@ int handle_user_input(int key) {
         message += "w - wear item\n";
         message += "i - view inventory\n";
         message += "I - view invetory item at index\n";
-        message += "e - view equipment\n\n";
+        message += "e - view equipment\n";
+        message += "? - view help\n\n";
         message += "(Press any key to return to game view)";
         print_on_clear_screen(message);
         return 0;
