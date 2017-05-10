@@ -2,8 +2,9 @@
 #include "util.h"
 
 int Character :: damage(int amount) {
-    int with_defense = amount - getDefense();
-    int actual_amount = max(0, with_defense);
+    int defense = getDefense();
+    int this_defense = random_int(ceil(defense / 2), defense);
+    int actual_amount = amount - this_defense;
     hitpoints -= actual_amount;
     return actual_amount;
 }

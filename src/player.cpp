@@ -3,7 +3,6 @@
 #include <iostream>
 #include <math.h>
 
-
 int Player :: getDefense() {
     int defense = 0;
     for (int i = 0; i < equipment.size(); i++) {
@@ -109,6 +108,7 @@ string Player :: getHudInfo() {
     info += "Carry: " + to_string(getWeight()) + "/" + to_string(getMaxCarryWeight()) + "\n";
     info += "XP: " + to_string(experience) + "/" + to_string(getExperienceRequiredForNextLevel()) + "\n";
     info += "Speed: " + to_string(getSpeed()) + "\n";
+    info += "Armour: " + to_string(getDefense()) + "\n";
     info += "Strength Level: " + to_string(strength_level) + "\n";
     info += "Dexterity Level: " + to_string(dexterity_level) + "\n";
     info += "Intelligence Level: " + to_string(intelligence_level) + "\n";
