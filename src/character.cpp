@@ -1,10 +1,14 @@
 #include "character.h"
 #include "util.h"
 
+bool Character :: hitWillConnect() {
+    return random_int(1, 100) <= 70;
+}
+
 int Character :: damage(int amount) {
     int defense = getDefense();
     int this_defense = random_int(ceil(defense / 2), defense);
-    int actual_amount = amount - this_defense;
+    int actual_amount = max(0, amount - this_defense);
     hitpoints -= actual_amount;
     return actual_amount;
 }

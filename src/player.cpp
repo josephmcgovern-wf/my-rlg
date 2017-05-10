@@ -3,6 +3,18 @@
 #include <iostream>
 #include <math.h>
 
+bool Player :: hitWillConnect() {
+    int bonus = 0;
+    for (int i = 0; i < equipment.size(); i++) {
+        Object * item = equipment[i];
+        if (item) {
+            bonus += item->hit_bonus;
+        }
+    }
+    int chance = min(70 + bonus, 100);
+    return random_int(1, 100) <= chance;
+}
+
 int Player :: getDefense() {
     int defense = 0;
     for (int i = 0; i < equipment.size(); i++) {

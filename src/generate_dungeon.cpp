@@ -349,6 +349,10 @@ bool is_in_line_of_sight(struct Coordinate start_coord, struct Coordinate end_co
 }
 
 bool damage_monster(Monster * monster, int damage) {
+    if (!monster->hitWillConnect()) {
+        add_message("You fail to hit the monster!");
+        return true;
+    }
     monster->damage(damage);
     int remaining = monster->hitpoints;
     add_message("You deal " + to_string(damage) + " points of damage to the monster (" + to_string(max(remaining, 0)) + " pts remain)");
@@ -1228,7 +1232,6 @@ int handle_ranged_mode_input() {
                 continue;
             }
             add_message("Hurting monster at: " + to_string(local_x) + ", " + to_string(local_y));
-            usleep(83333);
             damage_monster(board[local_y][local_x].monster, player->getRangedAttackDamage());
             return 1;
         }
@@ -2357,6 +2360,9 @@ void move_monster(Monster * monster) {
         attacked_player = true;
         if (player->willDodgeAttack()) {
             add_message("You dodge the monster's attack!");
+        }
+        else if(!player->hitWillConnect()) {
+            add_message("The monster fails to hit you!");
         }
         else {
             int damage = monster->getAttackDamage();

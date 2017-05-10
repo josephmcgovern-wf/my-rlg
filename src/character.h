@@ -18,6 +18,7 @@ class Character {
         bool is(Character * other);
         void regenerateHealth(int turn);
         int getDefense();
+        bool hitWillConnect();
         Character();
 };
 #endif

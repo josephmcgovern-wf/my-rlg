@@ -50,6 +50,7 @@ class Player : public Character {
         void levelUpSkill(string skill);
         bool willDodgeAttack();
         int getDefense();
+        bool hitWillConnect();
 
         // Variables
         int level;
