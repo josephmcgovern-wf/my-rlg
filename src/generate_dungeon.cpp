@@ -1342,6 +1342,33 @@ int handle_user_input(int key) {
         print_on_clear_screen(message);
         return 0;
     }
+    else if (key == 63) { // ? - help
+        string message = "HELP\n\n";
+        message += "MOVEMENT\n";
+        message += "h - one cell left\n";
+        message += "j - one cell down\n";
+        message += "k - one cell up\n";
+        message += "l - one cell left\n";
+        message += "y - one cell top-left\n";
+        message += "u - one cell top-right\n";
+        message += "b - one cell bottom-left\n";
+        message += "n - one cell bottom-right\n\n";
+        message += "GENERAL OPERATIONS\n";
+        message += "M - show messages\n";
+        message += "L - enter look mode\n";
+        message += "r - enter ranged mode\n";
+        message += "H - view HUD\n";
+        message += "d - drop item\n";
+        message += "x - expunge item from game\n";
+        message += "t - take off equiped item and place in inventory if applicable\n";
+        message += "w - wear item\n";
+        message += "i - view inventory\n";
+        message += "I - view invetory item at index\n";
+        message += "e - view equipment\n\n";
+        message += "(Press any key to return to game view)";
+        print_on_clear_screen(message);
+        return 0;
+    }
     else if (key == 94) { // ^ - level up
         show_level_up_screen();
         return 0;
