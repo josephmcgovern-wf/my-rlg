@@ -55,6 +55,7 @@ class Player : public Character {
         bool hasEnoughStaminaForAttack(int damage);
         void reduceStaminaFromDamage(int amount);
         void regenerateStamina(int turn);
+        string getStatusProgressBar(float base_percentage);
 
         // Variables
         int level;

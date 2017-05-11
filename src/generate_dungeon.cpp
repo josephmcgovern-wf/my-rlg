@@ -144,6 +144,9 @@ bool is_in_line_of_sight(struct Coordinate coord1, struct Coordinate coord2);
 void update_board_distances();
 void update_distances_on_interval();
 int get_number_of_explored_rooms();
+void display_health_status_at(int row);
+void display_stamina_status_at(int row);
+void display_xp_status_at(int row);
 
 
 int main(int argc, char *args[]) {
@@ -365,10 +368,6 @@ bool is_in_line_of_sight(struct Coordinate start_coord, struct Coordinate end_co
 }
 
 bool damage_monster(Monster * monster, int damage) {
-    if (!player->hasEnoughStaminaForAttack(damage)) {
-        add_message("You do not have enough stamina for this attack!");
-        return true;
-    }
     player->reduceStaminaFromDamage(damage);
     if (!monster->hitWillConnect()) {
         add_message("You fail to hit the monster!");
@@ -1124,12 +1123,69 @@ void update_board_view(int ncurses_start_x, int ncurses_start_y) {
         }
         row ++;
     }
-    move(22, 0);
+
+    display_health_status_at(row);
+    row ++;
+    row ++;
+    row ++;
+
+    // Display Stamina
+    display_stamina_status_at(row);
+    row++;
+    row++;
+    row++;
+
+    // Display xp
+    display_xp_status_at(row);
+    row++;
+    row++;
+    row++;
+
+    move(row, 0);
     clrtoeol();
-    mvprintw(22, 0, ("Monsters remaining: " + to_string(monsters.size())).c_str());
-    move(23, 0);
+    mvprintw(row, 0, ("Monsters remaining: " + to_string(monsters.size())).c_str());
+    row++;
+    move(row, 0);
     clrtoeol();
-    mvprintw(23, 0, ("Rooms explored: " + to_string(get_number_of_explored_rooms()) + "/" + to_string(rooms.size())).c_str());
+    mvprintw(row, 0, ("Rooms explored: " + to_string(get_number_of_explored_rooms()) + "/" + to_string(rooms.size())).c_str());
+    row++;
+}
+
+void display_health_status_at(int row) {
+    mvprintw(row, 0, "Health:");
+    row++;
+    int red = color_map["RED"];
+    move(row, 0);
+    clrtoeol();
+    attron(COLOR_PAIR(red));
+    mvprintw(row, 0, (player->getStatusProgressBar(player->hitpoints/(1.0*player->max_hitpoints)).c_str()));
+    attroff(COLOR_PAIR(red));
+}
+
+void display_stamina_status_at(int row) {
+    mvprintw(row, 0, "Stamina:");
+    row++;
+    move(row, 0);
+    clrtoeol();
+    int green = color_map["GREEN"];
+    attron(COLOR_PAIR(green));
+    mvprintw(row, 0, (player->getStatusProgressBar(player->stamina_points/(1.0*player->max_stamina_points))).c_str());
+    attroff(COLOR_PAIR(green));
+}
+
+void display_xp_status_at(int row) {
+    mvprintw(row, 0, "XP:");
+    row++;
+    move(row, 0);
+    clrtoeol();
+    int cyan = color_map["CYAN"];
+    attron(COLOR_PAIR(cyan));
+    float percentage = player->experience / (1.0*player->getExperienceRequiredForNextLevel());
+    if (player->skill_points) {
+        percentage = 1;
+    }
+    mvprintw(row, 0, (player->getStatusProgressBar(percentage)).c_str());
+    attroff(COLOR_PAIR(cyan));
 }
 
 void handle_user_input_for_look_mode(int key) {
@@ -1262,8 +1318,12 @@ int handle_ranged_mode_input() {
             if (!board[local_y][local_x].monster) {
                 continue;
             }
-            add_message("Hurting monster at: " + to_string(local_x) + ", " + to_string(local_y));
-            damage_monster(board[local_y][local_x].monster, player->getRangedAttackDamage());
+            int damage = player->getRangedAttackDamage();
+            if (!player->hasEnoughStaminaForAttack(damage)) {
+                add_message("You do not have enough stamina for this attack!");
+                return 0;
+            }
+            damage_monster(board[local_y][local_x].monster, damage);
             return 1;
         }
         move(new_coord.y, new_coord.x);
@@ -1666,7 +1726,12 @@ int handle_user_input(int key) {
     }
     if (board[new_coord.y][new_coord.x].monster) {
         Monster * monster = board[new_coord.y][new_coord.x].monster;
-        bool isAlive = damage_monster(monster, player->getAttackDamage());
+        int damage = player->getAttackDamage();
+        if (!player->hasEnoughStaminaForAttack(damage)) {
+            add_message("You do not have enough stamina for this attack!");
+            return 0;
+        }
+        bool isAlive = damage_monster(monster, damage);
         if (isAlive) {
             new_coord.x = player->x;
             new_coord.y = player->y;

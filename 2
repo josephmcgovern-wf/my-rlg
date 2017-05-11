@@ -10,20 +10,11 @@ void Player :: regenerateStamina(int turn) {
 }
 
 bool Player :: hasEnoughStaminaForAttack(int damage) {
-    int bonus = 0;
-    if (dexterity_level) {
-        bonus = dexterity_level + ceil(pow(dexterity_level + 1, 1.5));
-    }
-    return (ceil(damage * 0.7) - bonus) <= stamina_points;
+    return ceil(damage * 0.7) <= stamina_points;
 }
 
 void Player :: reduceStaminaFromDamage(int amount) {
     int actual_amount = ceil(amount * 0.7);
-    int bonus = 0;
-    if (dexterity_level) {
-        bonus = dexterity_level + ceil(pow(dexterity_level + 1, 1.5));
-    }
-    actual_amount -= bonus;
     stamina_points = max(0, stamina_points - actual_amount);
 }
 
@@ -144,7 +135,10 @@ int Player :: getSpeed() {
 
 string Player :: getHudInfo() {
     string info = "Level: " + to_string(level) + "\n";
+    info += "Health: " + to_string(hitpoints) + "/" + to_string(max_hitpoints) + ":\t\n";
+    info += "Stamina: " + to_string(stamina_points) + "/" + to_string(max_stamina_points) + ":\t\n";
     info += "Carry: " + to_string(getWeight()) + "/" + to_string(getMaxCarryWeight()) + "\n";
+    info += "XP: " + to_string(experience) + "/" + to_string(getExperienceRequiredForNextLevel()) + ":\t\n";
     info += "Speed: " + to_string(getSpeed()) + "\n";
     info += "Armour: " + to_string(getDefense()) + "\n";
     info += "Strength Level: " + to_string(strength_level) + "\n";
@@ -153,18 +147,13 @@ string Player :: getHudInfo() {
     return info;
 }
 
-string Player :: getStatusProgressBar(float base_percentage) {
+string getHealthProgressBar() {
     string str = "|";
-    int percentage = base_percentage * 30;
-    for (int i = 1; i <= 30; i++) {
-        if (i <= percentage) {
-            str += "#";
-        }
-        else {
-            str += " ";
-        }
+    int percentage = hitpoints / max_hitpoints;
+    for (int i = 1; i <= 10; i++) {
+        int num = i;
+        if (num <= percentage);
     }
-    return str + "|";
 }
 
 bool Player :: isOverEncumbered() {
