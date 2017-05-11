@@ -38,14 +38,14 @@
 #define ROCK 200
 #define ROOM 0
 #define CORRIDOR 0
-#define MIN_NUMBER_OF_ROOMS 10
-#define MAX_NUMBER_OF_ROOMS 50
+#define MIN_NUMBER_OF_ROOMS 25
+#define MAX_NUMBER_OF_ROOMS 40
 #define MIN_ROOM_WIDTH 7
-#define DEFAULT_MAX_ROOM_WIDTH 15
+#define DEFAULT_MAX_ROOM_WIDTH 20
 #define MIN_ROOM_HEIGHT 5
-#define DEFAULT_MAX_ROOM_HEIGHT 10
+#define DEFAULT_MAX_ROOM_HEIGHT 15
 #define MIN_NUMBER_OF_MONSTERS 5
-#define MAX_NUMBER_OF_MONSTERS 50
+#define MAX_NUMBER_OF_MONSTERS 25
 using namespace std;
 
 static const string TYPE_ROOM = "room";
@@ -70,6 +70,7 @@ struct Room {
     int end_x;
     int start_y;
     int end_y;
+    bool has_explored;
 };
 
 static Board_Cell board[HEIGHT][WIDTH];
@@ -135,14 +136,14 @@ void add_rooms_to_board();
 void dig_cooridors();
 void connect_rooms_at_indexes(int index1, int index2);
 void move_player();
-struct Room get_room_player_is_in();
+int get_room_index_player_is_in();
 void move_monster(Monster * monster);
 void print_on_clear_screen(string message);
 bool cell_is_illuminated(Board_Cell cell);
-bool monster_is_in_same_room_as_player(Monster * m);
 bool is_in_line_of_sight(struct Coordinate coord1, struct Coordinate coord2);
 void update_board_distances();
 void update_distances_on_interval();
+int get_number_of_explored_rooms();
 
 
 int main(int argc, char *args[]) {
@@ -212,6 +213,10 @@ int main(int argc, char *args[]) {
             if (DO_QUIT) {
                 break;
             }
+            int index = get_room_index_player_is_in();
+            if (index != -1) {
+                rooms[index].has_explored = true;
+            }
             center_board_on_player();
             refresh();
             if (success == 2) {
@@ -230,6 +235,7 @@ int main(int argc, char *args[]) {
             update_tunneling_distance_in_background();
             */
             speed = player->getSpeed();
+            player->regenerateStamina(game_turn);
         }
         else {
             Monster * monster = (Monster *) character;
@@ -275,6 +281,16 @@ int main(int argc, char *args[]) {
     object_templates.clear();
 
     return 0;
+}
+
+int get_number_of_explored_rooms() {
+    int num = 0;
+    for (int i = 0; i < rooms.size(); i++) {
+        if (rooms[i].has_explored) {
+            num ++;
+        }
+    }
+    return num;
 }
 
 void update_distances_on_interval() {
@@ -349,6 +365,11 @@ bool is_in_line_of_sight(struct Coordinate start_coord, struct Coordinate end_co
 }
 
 bool damage_monster(Monster * monster, int damage) {
+    if (!player->hasEnoughStaminaForAttack(damage)) {
+        add_message("You do not have enough stamina for this attack!");
+        return true;
+    }
+    player->reduceStaminaFromDamage(damage);
     if (!monster->hitWillConnect()) {
         add_message("You fail to hit the monster!");
         return true;
@@ -488,6 +509,10 @@ void generate_new_board() {
     generate_monsters_from_templates(num_monsters);
     generate_stairs();
     generate_objects_from_templates();
+    int index = get_room_index_player_is_in();
+    if (index != -1) {
+        rooms[index].has_explored = true;
+    }
 }
 
 struct Coordinate get_random_unoccupied_location_in_room(struct Room room) {
@@ -1099,6 +1124,12 @@ void update_board_view(int ncurses_start_x, int ncurses_start_y) {
         }
         row ++;
     }
+    move(22, 0);
+    clrtoeol();
+    mvprintw(22, 0, ("Monsters remaining: " + to_string(monsters.size())).c_str());
+    move(23, 0);
+    clrtoeol();
+    mvprintw(23, 0, ("Rooms explored: " + to_string(get_number_of_explored_rooms()) + "/" + to_string(rooms.size())).c_str());
 }
 
 void handle_user_input_for_look_mode(int key) {
@@ -1621,7 +1652,6 @@ int handle_user_input(int key) {
         return 2;
     }
     else if (key == 32 || key == 5) { // space - rest
-        // you rest
         add_message("You rest");
     }
     else if (key == 76 && IS_CONTROL_MODE) { // L - enter look mode
@@ -1744,6 +1774,7 @@ void dig_room() {
     room.start_y = start_y;
     room.end_x = end_x;
     room.end_y = end_y;
+    room.has_explored = false;
     if (room_is_valid(room)) {
         rooms.push_back(room);
     }
@@ -1990,34 +2021,18 @@ Board_Cell get_cell_on_non_tunneling_path(struct Coordinate c) {
     return cell;
 }
 
-struct Room get_room_player_is_in() {
-    struct Room room;
-    room.start_x = 0;
-    room.end_x = 0;
-    room.start_y = 0;
-    room.end_y = 0;
+int get_room_index_player_is_in() {
+    int index = -1;
     for (size_t i = 0; i < rooms.size(); i++) {
         struct Room current_room = rooms[i];
         if (current_room.start_x <= player->x && player->x <= current_room.end_x) {
             if (current_room.start_y <= player->y && player->y <= current_room.end_y) {
-                room = current_room;
+                index = i;
                 break;
             }
         }
     }
-    return room;
-}
-
-bool monster_is_in_same_room_as_player(Monster * m) {
-    int x = m->x;
-    int y = m->y;
-    struct Room room = get_room_player_is_in();
-    if (room.start_x <= x && x <= room.end_x) {
-        if (room.start_y <= y && y <= room.end_y) {
-            return true;
-        }
-    }
-    return false;
+    return index;
 }
 
 int should_do_erratic_behavior() {

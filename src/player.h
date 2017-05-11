@@ -10,8 +10,9 @@ using namespace std;
 class Player : public Character {
     private:
         static const int MAX_INVENTORY_SIZE = 10;
-        static const int DEFAULT_MAX_CARRYING_WEIGHT = 250;
+        static const int DEFAULT_MAX_CARRYING_WEIGHT = 150;
         static const int MAX_HITPOINTS = 500;
+        static const int DEFAULT_MAX_STAMINA = 200;
         static const int DEFAULT_LIGHT_RADIUS = 5;
         vector<Object *> inventory;
         vector<Object *> equipment;
@@ -51,6 +52,9 @@ class Player : public Character {
         bool willDodgeAttack();
         int getDefense();
         bool hitWillConnect();
+        bool hasEnoughStaminaForAttack(int damage);
+        void reduceStaminaFromDamage(int amount);
+        void regenerateStamina(int turn);
 
         // Variables
         int level;
@@ -58,6 +62,8 @@ class Player : public Character {
         int strength_level;
         int dexterity_level;
         int intelligence_level;
+        int max_stamina_points;
+        int stamina_points;
 
         // Constructors
         Player();

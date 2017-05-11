@@ -3,6 +3,21 @@
 #include <iostream>
 #include <math.h>
 
+void Player :: regenerateStamina(int turn) {
+    int turn_delta = turn - turn_health_regenerated;
+    int regen = (max_stamina_points * 0.01) * turn_delta;
+    stamina_points = min(stamina_points + regen, max_stamina_points);
+}
+
+bool Player :: hasEnoughStaminaForAttack(int damage) {
+    return ceil(damage * 0.7) <= stamina_points;
+}
+
+void Player :: reduceStaminaFromDamage(int amount) {
+    int actual_amount = ceil(amount * 0.7);
+    stamina_points = max(0, stamina_points - actual_amount);
+}
+
 bool Player :: hitWillConnect() {
     int bonus = 0;
     for (int i = 0; i < equipment.size(); i++) {
@@ -53,9 +68,13 @@ int Player :: getMaxCarryWeight() {
 void Player :: levelUpSkill(string skill) {
     if (!skill.compare("Strength")) {
         strength_level ++;
+        max_hitpoints += 50;
+        hitpoints += 50;
     }
     else if(!skill.compare("Dexterity")) {
         dexterity_level ++;
+        max_stamina_points += 50;
+        stamina_points += 50;
     }
     else if(!skill.compare("Intelligence")) {
         intelligence_level ++;
@@ -116,7 +135,8 @@ int Player :: getSpeed() {
 
 string Player :: getHudInfo() {
     string info = "Level: " + to_string(level) + "\n";
-    info += "Health: " + to_string(hitpoints) + "/" + to_string(MAX_HITPOINTS) + "\n";
+    info += "Health: " + to_string(hitpoints) + "/" + to_string(max_hitpoints) + "\n";
+    info += "Stamina: " + to_string(stamina_points) + "/" + to_string(max_stamina_points) + "\n";
     info += "Carry: " + to_string(getWeight()) + "/" + to_string(getMaxCarryWeight()) + "\n";
     info += "XP: " + to_string(experience) + "/" + to_string(getExperienceRequiredForNextLevel()) + "\n";
     info += "Speed: " + to_string(getSpeed()) + "\n";
@@ -390,6 +410,8 @@ Player :: Player() : Character() {
     intelligence_level = 0;
     hitpoints = MAX_HITPOINTS;
     max_hitpoints = MAX_HITPOINTS;
+    stamina_points = DEFAULT_MAX_STAMINA;
+    max_stamina_points = DEFAULT_MAX_STAMINA;
     x = 0;
     y = 0;
     for (int i = 0; i < 12; i++) {
