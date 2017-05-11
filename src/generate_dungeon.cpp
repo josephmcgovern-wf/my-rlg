@@ -1832,7 +1832,7 @@ void dig_room() {
     int width = end_x - start_x;
     int width_diff = MIN_ROOM_WIDTH - width;
     if (width_diff > 0) {
-        start_x -= width_diff;
+        start_x -= width_diff + 1;
     }
     struct Room room;
     room.start_x = start_x;
