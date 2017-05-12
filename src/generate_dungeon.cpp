@@ -97,8 +97,11 @@ static int SHOW_HELP = 0;
 static int MAX_ROOM_WIDTH = DEFAULT_MAX_ROOM_WIDTH;
 static int MAX_ROOM_HEIGHT = DEFAULT_MAX_ROOM_HEIGHT;
 
+void display_magic_status_at_row(int row);
 void add_temp_message(string message);
 void handle_killed_monster(Monster * monster);
+bool damage_monster_from_magic(Monster * monster, int damage);
+bool damage_monster_from_melee_or_ranged(Monster * monster, int damage);
 bool damage_monster(Monster * monster, int damage);
 void init_color_pairs();
 void generate_monsters_from_templates(int how_many);
@@ -147,6 +150,7 @@ int get_number_of_explored_rooms();
 void display_health_status_at(int row);
 void display_stamina_status_at(int row);
 void display_xp_status_at(int row);
+int handle_cast_mode_input();
 
 
 int main(int argc, char *args[]) {
@@ -239,6 +243,7 @@ int main(int argc, char *args[]) {
             */
             speed = player->getSpeed();
             player->regenerateStamina(game_turn);
+            player->regenerateMagic(game_turn);
         }
         else {
             Monster * monster = (Monster *) character;
@@ -367,8 +372,17 @@ bool is_in_line_of_sight(struct Coordinate start_coord, struct Coordinate end_co
     return true;
 }
 
-bool damage_monster(Monster * monster, int damage) {
+bool damage_monster_from_magic(Monster * monster, int damage) {
+    player->reduceMagicFromDamage(damage);
+    return damage_monster(monster, damage);
+}
+
+bool damage_monster_from_melee_or_ranged(Monster * monster, int damage) {
     player->reduceStaminaFromDamage(damage);
+    return damage_monster(monster, damage);
+}
+
+bool damage_monster(Monster * monster, int damage) {
     if (!monster->hitWillConnect()) {
         add_message("You fail to hit the monster!");
         return true;
@@ -382,6 +396,7 @@ bool damage_monster(Monster * monster, int damage) {
         handle_killed_monster(monster);
     }
     return isAlive;
+
 }
 
 void init_color_pairs() {
@@ -446,6 +461,11 @@ void generate_objects_from_templates() {
         struct Coordinate coordinate;
         ObjectTemplate object_template = object_templates[i];
         Object * object = object_template.makeObject();
+        if (object->name.compare("Fireball") == 0) {
+            objects.push_back(object);
+            player->addObjectToInventory(object);
+            continue;
+        }
         while(true) {
             coordinate = get_random_board_location();
             Board_Cell cell = board[coordinate.y][coordinate.x];
@@ -1135,6 +1155,12 @@ void update_board_view(int ncurses_start_x, int ncurses_start_y) {
     row++;
     row++;
 
+    // Display magic
+    display_magic_status_at_row(row);
+    row ++;
+    row++;
+    row++;
+
     // Display xp
     display_xp_status_at(row);
     row++;
@@ -1171,6 +1197,17 @@ void display_stamina_status_at(int row) {
     attron(COLOR_PAIR(green));
     mvprintw(row, 0, (player->getStatusProgressBar(player->stamina_points/(1.0*player->max_stamina_points))).c_str());
     attroff(COLOR_PAIR(green));
+}
+
+void display_magic_status_at_row(int row) {
+    mvprintw(row, 0, "Magic:");
+    row++;
+    move(row, 0);
+    clrtoeol();
+    int blue = color_map["BLUE"];
+    attron(COLOR_PAIR(blue));
+    mvprintw(row, 0, (player->getStatusProgressBar(player->magic/(1.0*player->max_magic))).c_str());
+    attroff(COLOR_PAIR(blue));
 }
 
 void display_xp_status_at(int row) {
@@ -1238,6 +1275,125 @@ void handle_killed_monster(Monster * monster) {
         delete(monster);
     }
 
+}
+
+int handle_cast_mode_input() {
+    // Determine spell index
+    string title = "Which spell index? ";
+    add_temp_message(title);
+    move(0, title.length());
+    char arr[80];
+    echo();
+    getstr(arr);
+    string str(arr);
+    noecho();
+    int index;
+    try {
+        index = stoi(str);
+    }
+    catch(...) {
+        add_temp_message("Invalid input. It's your turn");
+        return 0;
+    }
+    if (index > player->spells.size() - 1 || index < 0) {
+        add_temp_message("No spell at that index. It's still your turn");
+        return 0;
+    }
+    Object * spell = player->spells[index];
+    struct Coordinate new_coord = ncurses_player_coord;
+    int local_x = player->x;
+    int local_y = player->y;
+    if (spell->name.compare("Fireball") == 0) {
+        while(true) {
+            add_temp_message("Select cell to cast spell");
+            move(new_coord.y, new_coord.x);
+            int key = getch();
+            add_message(to_string((char) key));
+            if (key == 107) { // k - one cell up
+                if (board[local_y - 1][local_x].hardness > 0 || !cell_is_illuminated(board[local_y - 1][local_x])) {
+                    add_message("Skipping");
+                    continue;
+                }
+                new_coord.y --;
+                local_y --;
+            }
+            else if (key == 106) { // j - one cell down
+                if (board[local_y + 1][local_x].hardness > 0 || !cell_is_illuminated(board[local_y + 1][local_x])) {
+                    add_message("Skipping");
+                    continue;
+                }
+                new_coord.y ++;
+                local_y ++;
+            }
+            else if (key == 104) { // h - one cell left
+                if (board[local_y][local_x - 1].hardness > 0 || !cell_is_illuminated(board[local_y][local_x - 1])) {
+                    continue;
+                }
+                new_coord.x --;
+                local_x --;
+            }
+            else if(key == 108) { // l - one cell right
+                if (board[local_y][local_x + 1].hardness > 0 || !cell_is_illuminated(board[local_y][local_x + 1])) {
+                    continue;
+                }
+                new_coord.x ++;
+                local_x ++;
+            }
+            else if (key == 121) { // y - one cell up-left
+                if (board[local_y - 1][local_x - 1].hardness > 0 || !cell_is_illuminated(board[local_y - 1][local_x - 1])) {
+                    continue;
+                }
+                new_coord.x --;
+                new_coord.y --;
+                local_y --;
+                local_x --;
+            }
+            else if (key == 117) { // u - one cell up-right
+                if (board[local_y - 1][local_x + 1].hardness > 0 || !cell_is_illuminated(board[local_y - 1][local_x + 1])) {
+                    continue;
+                }
+                new_coord.x ++;
+                new_coord.y --;
+                local_y --;
+                local_x ++;
+            }
+            else if (key == 110) { // n - one cell low-right
+                if (board[local_y + 1][local_x + 1].hardness > 0 || !cell_is_illuminated(board[local_y + 1][local_x + 1])) {
+                    continue;
+                }
+                new_coord.x ++;
+                new_coord.y ++;
+                local_x ++;
+                local_y ++;
+            }
+            else if (key == 98) { // b - one cell low-left
+                if (board[local_y + 1][local_x - 1].hardness > 0 || !cell_is_illuminated(board[local_y + 1][local_x - 1])) {
+                    continue;
+                }
+                new_coord.x --;
+                new_coord.y ++;
+                local_x --;
+                local_y ++;
+            }
+            else if (key == 27 || key == 81) { // escape - exit
+                add_temp_message("Exited cast mode. It's still your turn");
+                return 0;
+            }
+            else if (key == 13 || key == 10) { // carriage return
+                if (!board[local_y][local_x].monster) {
+                    continue;
+                }
+                int damage = player->getDamageForSpell(spell);
+                if (!player->hasEnoughMagicForAttack(damage)) {
+                    add_temp_message("You do not have enough magic for this attack!");
+                    return 0;
+                }
+                damage_monster_from_magic(board[local_y][local_x].monster, damage);
+                return 1;
+            }
+        }
+    }
+    return 0;
 }
 
 int handle_ranged_mode_input() {
@@ -1323,7 +1479,7 @@ int handle_ranged_mode_input() {
                 add_message("You do not have enough stamina for this attack!");
                 return 0;
             }
-            damage_monster(board[local_y][local_x].monster, damage);
+            damage_monster_from_melee_or_ranged(board[local_y][local_x].monster, damage);
             return 1;
         }
         move(new_coord.y, new_coord.x);
@@ -1465,7 +1621,16 @@ int handle_user_input(int key) {
         show_level_up_screen();
         return 0;
     }
-
+    else if (key == 83) { // s - view spells
+        string message = "SPELLS\n\n";
+        for (int i = 0; i < player->spells.size(); i++) {
+            Object * spell = player->spells[i];
+            message += to_string(i + 1) + ": " + spell->name;
+        }
+        message += "\n\n";
+        message += "(Press any key to return to game view)";
+        print_on_clear_screen(message);
+    }
     else if (key == 77) { // M - show messages
         string logs = "";
         for(int i = 0; i < all_messages.size(); i++) {
@@ -1637,6 +1802,14 @@ int handle_user_input(int key) {
         add_temp_message("Entered ranged mode");
         return handle_ranged_mode_input();
     }
+    else if (key == 99) { // c - cast spell
+        if (player->spells.size() == 0) {
+            add_temp_message("You have not learned any spells. It's still your turn");
+            return 0;
+        }
+        add_temp_message("Entered cast mode");
+        return handle_cast_mode_input();
+    }
     else if (key == 107 || key == 8) { // k - one cell up
         if (board[player->y - 1][player->x].hardness > 0) {
            return 0;
@@ -1731,7 +1904,7 @@ int handle_user_input(int key) {
             add_message("You do not have enough stamina for this attack!");
             return 0;
         }
-        bool isAlive = damage_monster(monster, damage);
+        bool isAlive = damage_monster_from_melee_or_ranged(monster, damage);
         if (isAlive) {
             new_coord.x = player->x;
             new_coord.y = player->y;

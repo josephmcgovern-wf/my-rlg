@@ -14,6 +14,7 @@ class Player : public Character {
         static const int MAX_HITPOINTS = 100;
         static const int DEFAULT_MAX_STAMINA = 50;
         static const int DEFAULT_LIGHT_RADIUS = 5;
+        static const int DEFAULT_MAX_MAGIC = 50;
         vector<Object *> inventory;
         vector<Object *> equipment;
         int getIndexToSwapEquipmentWith(string type);
@@ -56,6 +57,10 @@ class Player : public Character {
         void reduceStaminaFromDamage(int amount);
         void regenerateStamina(int turn);
         string getStatusProgressBar(float base_percentage);
+        int getDamageForSpell(Object * spell);
+        void reduceMagicFromDamage(int damage);
+        void regenerateMagic(int turn);
+        bool hasEnoughMagicForAttack(int damage);
 
         // Variables
         int level;
@@ -65,6 +70,9 @@ class Player : public Character {
         int intelligence_level;
         int max_stamina_points;
         int stamina_points;
+        int max_magic;
+        int magic;
+        vector<Object *> spells;
 
         // Constructors
         Player();

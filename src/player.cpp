@@ -3,6 +3,40 @@
 #include <iostream>
 #include <math.h>
 
+void Player :: reduceMagicFromDamage(int damage) {
+    int actual_amount = ceil(damage * 0.7);
+    int bonus = 0;
+    if (intelligence_level) {
+        bonus = intelligence_level + ceil(pow(intelligence_level + 1, 1.5));
+    }
+    actual_amount -= bonus;
+    magic = max(0, magic - actual_amount);
+
+}
+
+void Player :: regenerateMagic(int turn) {
+    int turn_delta = turn - turn_health_regenerated;
+    int regen = (max_magic * 0.008) * turn_delta;
+    magic = min(magic + regen, max_magic);
+}
+
+bool Player :: hasEnoughMagicForAttack(int damage) {
+    int bonus = 0;
+    if (intelligence_level) {
+        bonus = intelligence_level + ceil(pow(intelligence_level + 1, 1.5));
+    }
+    return (ceil(damage * 0.7) - bonus) <= magic;
+}
+
+int Player :: getDamageForSpell(Object * spell) {
+    int damage = spell->damage_bonus->roll();
+    int bonus = 0;
+    if (intelligence_level) {
+        bonus = intelligence_level + ceil(pow(intelligence_level + 1, 1.5));
+    }
+    return damage + bonus;
+}
+
 void Player :: regenerateStamina(int turn) {
     int turn_delta = turn - turn_health_regenerated;
     int regen = (max_stamina_points * 0.01) * turn_delta;
@@ -244,7 +278,11 @@ string Player :: viewInventoryObjectAt(int index) {
 
 void Player :: equipObjectAt(int index) {
     Object * object = inventory[index];
-    if (object) {
+    if (object && object->type.compare("SPELL") == 0) {
+        spells.push_back(object);
+        inventory.erase(inventory.begin() + index);
+    }
+    else if (object) {
         int equipmentIndex = getIndexToSwapEquipmentWith(object->type);
         Object * equippedObject = equipment[equipmentIndex];
         if (equippedObject) {
@@ -431,6 +469,8 @@ Player :: Player() : Character() {
     max_hitpoints = MAX_HITPOINTS;
     stamina_points = DEFAULT_MAX_STAMINA;
     max_stamina_points = DEFAULT_MAX_STAMINA;
+    max_magic = DEFAULT_MAX_MAGIC;
+    magic = max_magic;
     x = 0;
     y = 0;
     for (int i = 0; i < 12; i++) {

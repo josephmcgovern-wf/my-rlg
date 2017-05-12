@@ -52,8 +52,8 @@ char Object :: getSymbol() {
     if (!type.compare("FOOD")) {
         return ',';
     }
-    if (!type.compare("WAND")) {
-        return '-';
+    if (!type.compare("SPELL")) {
+        return '*';
     }
     if (!type.compare("CONTAINER")) {
         return '%';
