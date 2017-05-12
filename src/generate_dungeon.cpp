@@ -461,11 +461,6 @@ void generate_objects_from_templates() {
         struct Coordinate coordinate;
         ObjectTemplate object_template = object_templates[i];
         Object * object = object_template.makeObject();
-        if (object->name.compare("Fireball") == 0) {
-            objects.push_back(object);
-            player->addObjectToInventory(object);
-            continue;
-        }
         while(true) {
             coordinate = get_random_board_location();
             Board_Cell cell = board[coordinate.y][coordinate.x];
