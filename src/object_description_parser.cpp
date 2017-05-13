@@ -16,12 +16,14 @@ const string WEIGHT_KEYWORD = "WEIGHT";
 const string SPEED_BONUS_KEYWORD = "SPEED";
 const string SPECIAL_ATTRIBUTE_KEYWORD = "ATTR";
 const string VALUE_KEYWORD = "VAL";
+const string COST_KEYWORD = "COST";
 
 ObjectDescriptionParser::ObjectDescriptionParser(string filepath) {
     this->filepath = filepath;
 }
 
 void ObjectDescriptionParser::parseFile() {
+    fflush(stdout);
     vector<ObjectTemplate> new_objects;
     ObjectTemplate * current_object = NULL;
     string line;
@@ -101,9 +103,17 @@ void ObjectDescriptionParser::parseFile() {
                     Numeric * speed = new Numeric(line);
                     current_object->speed_bonus = speed;
                 }
+                else if (starts_with(line, COST_KEYWORD)) {
+                    line.erase(0, (COST_KEYWORD + " ").length());
+                    Numeric * cost = new Numeric(line);
+                    current_object->cost = cost;
+                }
                 else if (line.compare("END") == 0) {
                     if (current_object->isValid()) {
                         new_objects.push_back(*current_object);
+                    }
+                    else {
+                        throw "An object with an invalid configuration was parsed";
                     }
                 }
 

@@ -20,5 +20,6 @@ class ObjectTemplate {
         Numeric * speed_bonus;
         Numeric * special_attribute;
         Numeric * value;
+        Numeric * cost;
 };
 #endif

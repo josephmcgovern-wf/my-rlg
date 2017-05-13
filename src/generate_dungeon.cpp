@@ -103,8 +103,8 @@ void add_experience_to_player(int amount);
 void display_magic_status_at_row(int row);
 void add_temp_message(string message);
 void handle_killed_monster(Monster * monster);
-bool damage_monster_from_magic(Monster * monster, int damage);
-bool damage_monster_from_melee_or_ranged(Monster * monster, int damage);
+bool damage_monster_from_magic(Monster * monster, Object * spell);
+bool damage_monster_from_melee_or_ranged(Monster * monster, Object * weapon, int damage);
 bool damage_monster(Monster * monster, int damage);
 void init_color_pairs();
 void generate_monsters_from_templates(int how_many);
@@ -387,13 +387,19 @@ bool is_in_line_of_sight(struct Coordinate start_coord, struct Coordinate end_co
     return true;
 }
 
-bool damage_monster_from_magic(Monster * monster, int damage) {
-    player->reduceMagicFromSpell(damage);
-    return damage_monster(monster, damage);
+bool damage_monster_from_magic(Monster * monster, Object * spell) {
+    player->reduceMagicFromSpell(spell->cost);
+    return damage_monster(monster, player->getDamageForSpell(spell));
 }
 
-bool damage_monster_from_melee_or_ranged(Monster * monster, int damage) {
-    player->reduceStaminaFromDamage(damage);
+bool damage_monster_from_melee_or_ranged(Monster * monster, Object * weapon, int damage) {
+    if (weapon) {
+        player->reduceStaminaFromDamage(weapon->cost);
+    }
+    else {
+
+        player->reduceStaminaFromDamage(3);
+    }
     return damage_monster(monster, damage);
 }
 
@@ -1383,8 +1389,7 @@ int cast_spell(Object * spell) {
             add_temp_message("Exited cast mode. It's still your turn");
             return 0;
         }
-        int damage = player->getDamageForSpell(spell);
-        if (!player->hasEnoughMagicForSpell(damage)) {
+        if (!player->hasEnoughMagicForSpell(spell->cost)) {
             add_temp_message("You do not have enough magic for that spell!");
             return 0;
         }
@@ -1392,24 +1397,23 @@ int cast_spell(Object * spell) {
         if (!m) {
             return cast_spell(spell);
         }
-        damage_monster_from_magic((Monster *) element, damage);
+        damage_monster_from_magic((Monster *) element, spell);
         return 1;
     }
     else if(spell->name.compare("Healing") == 0) {
         int healing_amount = spell->defense_bonus;
-        if (!player->hasEnoughMagicForSpell(healing_amount)) {
+        if (!player->hasEnoughMagicForSpell(spell->cost)) {
            add_message("You do not have enough magic for that spell!");
            return 0;
         }
         add_message("You restore some of your health");
         player->restoreHealth(healing_amount);
-        player->reduceMagicFromSpell(healing_amount);
-        add_experience_to_player(healing_amount * 0.1);
+        player->reduceMagicFromSpell(spell->cost);
+        add_experience_to_player(spell->cost * 0.1);
         return 1;
     }
     else if (spell->name.compare("Teleport") == 0) {
-        int teleport_cost = 50;
-        if (!player->hasEnoughMagicForSpell(teleport_cost)) {
+        if (!player->hasEnoughMagicForSpell(spell->cost)) {
             add_message("You do not have enough magic for that spell!");
             return 0;
         }
@@ -1436,8 +1440,8 @@ int cast_spell(Object * spell) {
         }
         player->x = x;
         player->y = y;
-        player->reduceMagicFromSpell(teleport_cost);
-        add_experience_to_player(teleport_cost * 0.1);
+        player->reduceMagicFromSpell(spell->cost);
+        add_experience_to_player(spell->cost * 0.1);
 
         center_board_on_player();
     }
@@ -1475,12 +1479,14 @@ int handle_ranged_mode_input() {
     if (!m) {
         return handle_ranged_mode_input();
     }
+    vector<int> indexes = player->getIndexOfEquipmentType("RANGED");
+    Object * weapon = player->getEquipmentAt(indexes[0]);
     int damage = player->getRangedAttackDamage();
-    if (!player->hasEnoughStaminaForAttack(damage)) {
+    if (!player->hasEnoughStaminaForAttack(weapon->cost)) {
         add_message("You do not have enough stamina for this attack!");
         return 0;
     }
-    damage_monster_from_melee_or_ranged(m, damage);
+    damage_monster_from_melee_or_ranged(m, weapon, damage);
     return 1;
 }
 
@@ -1927,11 +1933,17 @@ int handle_user_input(int key) {
     if (board[new_coord.y][new_coord.x].monster) {
         Monster * monster = board[new_coord.y][new_coord.x].monster;
         int damage = player->getAttackDamage();
-        if (!player->hasEnoughStaminaForAttack(damage)) {
+        vector<int> indexes = player->getIndexOfEquipmentType("WEAPON");
+        Object * weapon = player->getEquipmentAt(indexes[0]);
+        int cost = 3;
+        if (weapon) {
+            cost = weapon->cost;
+        }
+        if (!player->hasEnoughStaminaForAttack(cost)) {
             add_message("You do not have enough stamina for this attack!");
             return 0;
         }
-        bool isAlive = damage_monster_from_melee_or_ranged(monster, damage);
+        bool isAlive = damage_monster_from_melee_or_ranged(monster, weapon, damage);
         if (isAlive) {
             new_coord.x = player->x;
             new_coord.y = player->y;

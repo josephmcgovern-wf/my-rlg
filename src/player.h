@@ -18,14 +18,14 @@ class Player : public Character {
         vector<Object *> inventory;
         vector<Object *> equipment;
         int getIndexToSwapEquipmentWith(string type);
-        vector<int> getIndexOfEquipmentType(string type);
-        string getEquipmentTypeFromIndex(int index);
         int getEquipmentWeight();
         int getInventoryWeight();
         int getMaxCarryWeight();
         void addSpell(Object * spell);
 
     public:
+        vector<int> getIndexOfEquipmentType(string type);
+        string getEquipmentTypeFromIndex(int index);
         bool hasObject(Object *);
         string getHudInfo();
         bool isOverEncumbered();

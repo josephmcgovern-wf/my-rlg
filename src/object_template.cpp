@@ -30,14 +30,18 @@ Object * ObjectTemplate :: makeObject() {
     object->speed_bonus = speed_bonus->roll();
     object->special_attribute = special_attribute->roll();
     object->value = value->roll();
+    object->cost = cost->roll();
     return object;
 }
 
 bool ObjectTemplate :: isValid() {
     return name.size() > 0 && description.size() > 0 && type.size() > 0 &&\
-        color.size() > 0 && hit_bonus->isValid() && damage_bonus->isValid() &&\
-        dodge_bonus->isValid() && defense_bonus->isValid() && weight->isValid() &&\
-        speed_bonus->isValid() && special_attribute->isValid() && value->isValid();
+        color.size() > 0 && hit_bonus && hit_bonus->isValid() && damage_bonus &&\
+        damage_bonus->isValid() && dodge_bonus && dodge_bonus->isValid() &&\
+        defense_bonus && defense_bonus->isValid() && weight && weight->isValid() &&\
+        speed_bonus && speed_bonus->isValid() && special_attribute &&\
+        special_attribute->isValid() && value && value->isValid() &&\
+        cost && cost->isValid();
 }
 
 string ObjectTemplate :: toString() {

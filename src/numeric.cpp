@@ -30,13 +30,13 @@ Numeric :: Numeric(string numericString) {
 }
 
 Numeric :: Numeric() {
-    base = -1;
-    dice = -1;
-    sides = -1;
+    base = -1000;
+    dice = -1000;
+    sides = -1000;
 }
 
 bool Numeric :: isValid() {
-    return base >= 0 && dice >= 0 && sides >= 0;
+    return base != -1000 && dice != -1000 && sides != -1000;
 }
 
 int Numeric :: roll() {

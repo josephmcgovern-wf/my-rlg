@@ -7,14 +7,13 @@ void Player :: restoreHealth(int amount) {
     hitpoints = min(max_hitpoints, hitpoints + amount);
 }
 
-void Player :: reduceMagicFromSpell(int damage) {
-    int actual_amount = ceil(damage * 0.7);
+void Player :: reduceMagicFromSpell(int amount) {
     int bonus = 0;
     if (intelligence_level) {
         bonus = intelligence_level + ceil(pow(intelligence_level + 1, 1.5));
     }
-    actual_amount -= bonus;
-    magic = max(0, magic - actual_amount);
+    amount -= bonus;
+    magic = max(0, magic - amount);
 
 }
 
@@ -24,12 +23,12 @@ void Player :: regenerateMagic(int turn) {
     magic = min(magic + regen, max_magic);
 }
 
-bool Player :: hasEnoughMagicForSpell(int damage) {
+bool Player :: hasEnoughMagicForSpell(int cost) {
     int bonus = 0;
     if (intelligence_level) {
         bonus = intelligence_level + ceil(pow(intelligence_level + 1, 1.5));
     }
-    return (ceil(damage * 0.5) - bonus) <= magic;
+    return (cost - bonus) <= magic;
 }
 
 int Player :: getDamageForSpell(Object * spell) {
@@ -47,12 +46,12 @@ void Player :: regenerateStamina(int turn) {
     stamina_points = min(stamina_points + regen, max_stamina_points);
 }
 
-bool Player :: hasEnoughStaminaForAttack(int damage) {
+bool Player :: hasEnoughStaminaForAttack(int cost) {
     int bonus = 0;
     if (dexterity_level) {
         bonus = dexterity_level + ceil(pow(dexterity_level + 1, 1.5));
     }
-    return (ceil(damage * 0.5) - bonus) <= stamina_points;
+    return (cost - bonus) <= stamina_points;
 }
 
 void Player :: reduceStaminaFromDamage(int amount) {

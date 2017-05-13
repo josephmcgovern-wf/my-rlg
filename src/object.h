@@ -19,5 +19,6 @@ class Object : public BoardElement {
         int speed_bonus;
         int special_attribute;
         int value;
+        int cost;
 };
 #endif
