@@ -477,7 +477,7 @@ void generate_objects_from_templates() {
         struct Coordinate coordinate;
         ObjectTemplate object_template = object_templates[i];
         Object * object = object_template.makeObject();
-        if (object->name.compare("Healing") == 0 || object->name.compare("Fireball") == 0) {
+        if (object->name.compare("Healing") == 0 || object->name.compare("Fireball") == 0 || object->name.compare("Teleport") == 0) {
             objects.push_back(object);
             player->addObjectToInventory(object);
             continue;
@@ -1396,16 +1396,50 @@ int cast_spell(Object * spell) {
         return 1;
     }
     else if(spell->name.compare("Healing") == 0) {
-        add_message("You restore some of your health");
         int healing_amount = spell->defense_bonus;
         if (!player->hasEnoughMagicForSpell(healing_amount)) {
            add_message("You do not have enough magic for that spell!");
            return 0;
         }
+        add_message("You restore some of your health");
         player->restoreHealth(healing_amount);
         player->reduceMagicFromSpell(healing_amount);
         add_experience_to_player(healing_amount * 0.1);
         return 1;
+    }
+    else if (spell->name.compare("Teleport") == 0) {
+        int teleport_cost = 50;
+        if (!player->hasEnoughMagicForSpell(teleport_cost)) {
+            add_message("You do not have enough magic for that spell!");
+            return 0;
+        }
+        add_message("You teleport to a room");
+        int index = get_room_index_player_is_in();
+        int new_room_index = -1;
+        for (int i = 0; i < rooms.size(); i++) {
+            struct Room room = rooms[i];
+            if (room.has_explored && index != i) {
+                new_room_index = i;
+                break;
+            }
+        }
+        if (new_room_index == -1) {
+            add_message("There is no available room to teleport to");
+            return 0;
+        }
+        struct Room new_room = rooms[new_room_index];
+        int x = random_int(new_room.start_x, new_room.end_x);
+        int y = random_int(new_room.start_y, new_room.end_y);
+        while (board[y][x].monster || board[y][x].object) {
+            x = random_int(new_room.start_x, new_room.end_x);
+            y = random_int(new_room.start_y, new_room.end_y);
+        }
+        player->x = x;
+        player->y = y;
+        player->reduceMagicFromSpell(teleport_cost);
+        add_experience_to_player(teleport_cost * 0.1);
+
+        center_board_on_player();
     }
     return 0;
 }
