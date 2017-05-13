@@ -229,7 +229,7 @@ int main(int argc, char *args[]) {
             int index = get_room_index_player_is_in();
             if (index != -1 && !rooms[index].has_explored) {
                 rooms[index].has_explored = true;
-                add_experience_to_player(ceil(player->level * 1.5));
+                add_experience_to_player(2);
             }
             center_board_on_player();
             refresh();
@@ -483,11 +483,13 @@ void generate_objects_from_templates() {
         struct Coordinate coordinate;
         ObjectTemplate object_template = object_templates[i];
         Object * object = object_template.makeObject();
+        /*
         if (player->canPickUpObject() && (object->name.compare("Healing") == 0 || object->name.compare("Fireball") == 0 || object->name.compare("Teleport") == 0)) {
             objects.push_back(object);
             player->addObjectToInventory(object);
             continue;
         }
+        */
         while(true) {
             coordinate = get_random_board_location();
             Board_Cell cell = board[coordinate.y][coordinate.x];
@@ -1458,6 +1460,7 @@ int handle_cast_mode_input() {
     string selection = letPlayerSelectOption(pre_message, options, post_message);
     center_board_on_player();
     if (selection.empty()) {
+        add_temp_message("It's your turn");
         return 0;
     }
     for (int i = 0; i < player->spells.size(); i++) {

@@ -136,7 +136,7 @@ void Player :: levelUpSkill(string skill) {
 
 void Player :: addExperience(int xp) {
     int xp_required = getExperienceRequiredForNextLevel();
-    int extra_xp = random_int(0, ceil(intelligence_level * 5));
+    int extra_xp = random_int(0, ceil(intelligence_level * 0.5));
     int current_experience = experience;
     experience += xp + extra_xp;
     if (current_experience <= xp_required && experience >= xp_required) {
