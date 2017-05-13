@@ -27,6 +27,7 @@
 #include "object_description_parser.h"
 #include "player.h"
 #include "message.h"
+#include "board_element.h"
 
 #include "priority_queue.h"
 
@@ -152,6 +153,8 @@ void display_health_status_at(int row);
 void display_stamina_status_at(int row);
 void display_xp_status_at(int row);
 int handle_cast_mode_input();
+int cast_spell(Object * spell);
+BoardElement * letPlayerSelectBoardElement();
 
 
 int main(int argc, char *args[]) {
@@ -1284,139 +1287,12 @@ void handle_killed_monster(Monster * monster) {
 
 }
 
-int handle_cast_mode_input() {
-    // Determine spell index
-    string title = "Which spell index? ";
-    add_temp_message(title);
-    move(0, title.length());
-    char arr[80];
-    echo();
-    getstr(arr);
-    string str(arr);
-    noecho();
-    int index;
-    try {
-        index = stoi(str);
-    }
-    catch(...) {
-        add_temp_message("Invalid input. It's your turn");
-        return 0;
-    }
-    if (index > player->spells.size() - 1 || index < 0) {
-        add_temp_message("No spell at that index. It's still your turn");
-        return 0;
-    }
-    Object * spell = player->spells[index];
+BoardElement * letPlayerSelectBoardElement() {
     struct Coordinate new_coord = ncurses_player_coord;
     int local_x = player->x;
     int local_y = player->y;
-    if (spell->name.compare("Fireball") == 0) {
-        while(true) {
-            add_temp_message("Select cell to cast spell");
-            move(new_coord.y, new_coord.x);
-            int key = getch();
-            if (key == 107) { // k - one cell up
-                if (board[local_y - 1][local_x].hardness > 0 || !cell_is_illuminated(board[local_y - 1][local_x])) {
-                    continue;
-                }
-                new_coord.y --;
-                local_y --;
-            }
-            else if (key == 106) { // j - one cell down
-                if (board[local_y + 1][local_x].hardness > 0 || !cell_is_illuminated(board[local_y + 1][local_x])) {
-                    continue;
-                }
-                new_coord.y ++;
-                local_y ++;
-            }
-            else if (key == 104) { // h - one cell left
-                if (board[local_y][local_x - 1].hardness > 0 || !cell_is_illuminated(board[local_y][local_x - 1])) {
-                    continue;
-                }
-                new_coord.x --;
-                local_x --;
-            }
-            else if(key == 108) { // l - one cell right
-                if (board[local_y][local_x + 1].hardness > 0 || !cell_is_illuminated(board[local_y][local_x + 1])) {
-                    continue;
-                }
-                new_coord.x ++;
-                local_x ++;
-            }
-            else if (key == 121) { // y - one cell up-left
-                if (board[local_y - 1][local_x - 1].hardness > 0 || !cell_is_illuminated(board[local_y - 1][local_x - 1])) {
-                    continue;
-                }
-                new_coord.x --;
-                new_coord.y --;
-                local_y --;
-                local_x --;
-            }
-            else if (key == 117) { // u - one cell up-right
-                if (board[local_y - 1][local_x + 1].hardness > 0 || !cell_is_illuminated(board[local_y - 1][local_x + 1])) {
-                    continue;
-                }
-                new_coord.x ++;
-                new_coord.y --;
-                local_y --;
-                local_x ++;
-            }
-            else if (key == 110) { // n - one cell low-right
-                if (board[local_y + 1][local_x + 1].hardness > 0 || !cell_is_illuminated(board[local_y + 1][local_x + 1])) {
-                    continue;
-                }
-                new_coord.x ++;
-                new_coord.y ++;
-                local_x ++;
-                local_y ++;
-            }
-            else if (key == 98) { // b - one cell low-left
-                if (board[local_y + 1][local_x - 1].hardness > 0 || !cell_is_illuminated(board[local_y + 1][local_x - 1])) {
-                    continue;
-                }
-                new_coord.x --;
-                new_coord.y ++;
-                local_x --;
-                local_y ++;
-            }
-            else if (key == 27 || key == 81) { // escape - exit
-                add_temp_message("Exited cast mode. It's still your turn");
-                return 0;
-            }
-            else if (key == 13 || key == 10) { // carriage return
-                if (!board[local_y][local_x].monster) {
-                    continue;
-                }
-                int damage = player->getDamageForSpell(spell);
-                if (!player->hasEnoughMagicForSpell(damage)) {
-                    add_temp_message("You do not have enough magic for that spell!");
-                    return 0;
-                }
-                damage_monster_from_magic(board[local_y][local_x].monster, damage);
-                return 1;
-            }
-        }
-    }
-    else if(spell->name.compare("Healing") == 0) {
-        add_message("You restore some of your health");
-        int healing_amount = spell->defense_bonus;
-        if (!player->hasEnoughMagicForSpell(healing_amount)) {
-           add_message("You do not have enough magic for that spell!");
-           return 0;
-        }
-        player->restoreHealth(healing_amount);
-        player->reduceMagicFromSpell(healing_amount);
-        add_experience_to_player(healing_amount * 0.1);
-        return 1;
-    }
-    return 0;
-}
 
-int handle_ranged_mode_input() {
-    struct Coordinate new_coord = ncurses_player_coord;
-    int local_x = player->x;
-    int local_y = player->y;
-    while(true) {
+    while (true) {
         int key = getch();
         if (key == 107) { // k - one cell up
             if (board[local_y - 1][local_x].hardness > 0 || !cell_is_illuminated(board[local_y - 1][local_x])) {
@@ -1483,24 +1359,96 @@ int handle_ranged_mode_input() {
             local_y ++;
         }
         else if (key == 27 || key == 81) { // escape - exit
-            add_temp_message("Exited ranged mode. It's still your turn");
-            return 0;
+            return NULL;
         }
         else if (key == 13 || key == 10) { // carriage return
-            if (!board[local_y][local_x].monster) {
-                continue;
+            if (board[local_y][local_x].monster) {
+                return board[local_y][local_x].monster;
             }
-            int damage = player->getRangedAttackDamage();
-            if (!player->hasEnoughStaminaForAttack(damage)) {
-                add_message("You do not have enough stamina for this attack!");
-                return 0;
+            else if(board[local_y][local_x].object) {
+                return board[local_y][local_x].object;
             }
-            damage_monster_from_melee_or_ranged(board[local_y][local_x].monster, damage);
-            return 1;
         }
         move(new_coord.y, new_coord.x);
     }
+}
+
+int cast_spell(Object * spell) {
+    if (spell->name.compare("Fireball") == 0) {
+        add_temp_message("Select cell to cast spell");
+        BoardElement * element = letPlayerSelectBoardElement();
+        if (!element) {
+            add_temp_message("Exited cast mode. It's still your turn");
+            return 0;
+        }
+        int damage = player->getDamageForSpell(spell);
+        if (!player->hasEnoughMagicForSpell(damage)) {
+            add_temp_message("You do not have enough magic for that spell!");
+            return 0;
+        }
+        if (typeid(element) != typeid(Monster)) {
+            return cast_spell(spell);
+        }
+        damage_monster_from_magic((Monster *) element, damage);
+        return 1;
+    }
+    else if(spell->name.compare("Healing") == 0) {
+        add_message("You restore some of your health");
+        int healing_amount = spell->defense_bonus;
+        if (!player->hasEnoughMagicForSpell(healing_amount)) {
+           add_message("You do not have enough magic for that spell!");
+           return 0;
+        }
+        player->restoreHealth(healing_amount);
+        player->reduceMagicFromSpell(healing_amount);
+        add_experience_to_player(healing_amount * 0.1);
+        return 1;
+    }
     return 0;
+}
+
+int handle_cast_mode_input() {
+    // Determine spell index
+    string title = "Which spell index? ";
+    add_temp_message(title);
+    move(0, title.length());
+    char arr[80];
+    echo();
+    getstr(arr);
+    string str(arr);
+    noecho();
+    int index;
+    try {
+        index = stoi(str);
+    }
+    catch(...) {
+        add_temp_message("Invalid input. It's your turn");
+        return 0;
+    }
+    if (index > player->spells.size() - 1 || index < 0) {
+        add_temp_message("No spell at that index. It's still your turn");
+        return 0;
+    }
+    Object * spell = player->spells[index];
+    return cast_spell(spell);
+}
+
+int handle_ranged_mode_input() {
+    BoardElement * element = letPlayerSelectBoardElement();
+    if (!element) {
+        add_temp_message("Exited ranged mode. It's still your turn");
+        return 0;
+    }
+    if (typeid(element) != typeid(Monster)) {
+        return handle_ranged_mode_input();
+    }
+    int damage = player->getRangedAttackDamage();
+    if (!player->hasEnoughStaminaForAttack(damage)) {
+        add_message("You do not have enough stamina for this attack!");
+        return 0;
+    }
+    damage_monster_from_melee_or_ranged((Monster *) element, damage);
+    return 1;
 }
 
 string get_level_up_screen_message() {

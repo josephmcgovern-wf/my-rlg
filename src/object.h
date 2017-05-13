@@ -2,12 +2,11 @@
 #define OBJECT_H
 #include <string>
 #include "numeric.h"
+#include "board_element.h"
 
-class Object {
+class Object : public BoardElement {
     public:
         char getSymbol();
-        int x;
-        int y;
         string name;
         string description;
         string type;

@@ -1,8 +1,9 @@
 #ifndef __CHARACTER_H
 #define __CHARACTER_H
 #include "numeric.h"
+#include "board_element.h"
 
-class Character {
+class Character : public BoardElement {
     public:
         string id;
         int turn_health_regenerated;
@@ -11,8 +12,6 @@ class Character {
         int hitpoints;
         int experience;
         Numeric * attack_damage;
-        int x;
-        int y;
         int damage(int amount);
         bool isAlive();
         bool is(Character * other);
