@@ -229,7 +229,7 @@ int main(int argc, char *args[]) {
             int index = get_room_index_player_is_in();
             if (index != -1 && !rooms[index].has_explored) {
                 rooms[index].has_explored = true;
-                add_experience_to_player(player->level * 2);
+                add_experience_to_player(ceil(player->level * 1.5));
             }
             center_board_on_player();
             refresh();
@@ -483,7 +483,7 @@ void generate_objects_from_templates() {
         struct Coordinate coordinate;
         ObjectTemplate object_template = object_templates[i];
         Object * object = object_template.makeObject();
-        if (object->name.compare("Healing") == 0 || object->name.compare("Fireball") == 0 || object->name.compare("Teleport") == 0) {
+        if (player->canPickUpObject() && (object->name.compare("Healing") == 0 || object->name.compare("Fireball") == 0 || object->name.compare("Teleport") == 0)) {
             objects.push_back(object);
             player->addObjectToInventory(object);
             continue;
@@ -1409,7 +1409,7 @@ int cast_spell(Object * spell) {
         add_message("You restore some of your health");
         player->restoreHealth(healing_amount);
         player->reduceMagicFromSpell(spell->cost);
-        add_experience_to_player(spell->cost * 0.1);
+        add_experience_to_player(ceil(spell->cost * 0.05));
         return 1;
     }
     else if (spell->name.compare("Teleport") == 0) {
@@ -1441,7 +1441,7 @@ int cast_spell(Object * spell) {
         player->x = x;
         player->y = y;
         player->reduceMagicFromSpell(spell->cost);
-        add_experience_to_player(spell->cost * 0.1);
+        add_experience_to_player(ceil(spell->cost * 0.05));
 
         center_board_on_player();
     }
@@ -1480,9 +1480,12 @@ int handle_ranged_mode_input() {
         return handle_ranged_mode_input();
     }
     vector<int> indexes = player->getIndexOfEquipmentType("RANGED");
-    Object * weapon = player->getEquipmentAt(indexes[0]);
+    Object * weapon = NULL;
+    if (indexes.size() > 0) {
+        weapon = player->getEquipmentAt(indexes[0]);
+    }
     int damage = player->getRangedAttackDamage();
-    if (!player->hasEnoughStaminaForAttack(weapon->cost)) {
+    if (weapon && !player->hasEnoughStaminaForAttack(weapon->cost)) {
         add_message("You do not have enough stamina for this attack!");
         return 0;
     }
@@ -1934,7 +1937,10 @@ int handle_user_input(int key) {
         Monster * monster = board[new_coord.y][new_coord.x].monster;
         int damage = player->getAttackDamage();
         vector<int> indexes = player->getIndexOfEquipmentType("WEAPON");
-        Object * weapon = player->getEquipmentAt(indexes[0]);
+        Object * weapon = NULL;
+        if (indexes.size() > 0) {
+            weapon = player->getEquipmentAt(indexes[0]);
+        }
         int cost = 3;
         if (weapon) {
             cost = weapon->cost;
@@ -1987,7 +1993,7 @@ void print_board() {
                 coord.x = x;
                 coord.y = y;
                 Monster * m = board[y][x].monster;
-                int decimal_type = m->getDecimalType();
+                int decimal_type = m->symbol;
                 printf("%x", decimal_type);
             }
             else {

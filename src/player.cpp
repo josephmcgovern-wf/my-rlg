@@ -137,8 +137,9 @@ void Player :: levelUpSkill(string skill) {
 void Player :: addExperience(int xp) {
     int xp_required = getExperienceRequiredForNextLevel();
     int extra_xp = random_int(0, ceil(intelligence_level * 5));
+    int current_experience = experience;
     experience += xp + extra_xp;
-    if (experience >= xp_required) {
+    if (current_experience <= xp_required && experience >= xp_required) {
         int diff = experience - xp_required;
         experience = diff;
         level ++;
@@ -147,7 +148,7 @@ void Player :: addExperience(int xp) {
 }
 
 int Player :: getExperienceRequiredForNextLevel() {
-    return ceil(20 * pow(level + 1, 0.6));
+    return ceil(20 * pow(level + 1, 0.8));
 }
 
 int Player :: getLightRadius() {
