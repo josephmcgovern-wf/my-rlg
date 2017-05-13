@@ -155,6 +155,7 @@ void display_xp_status_at(int row);
 int handle_cast_mode_input();
 int cast_spell(Object * spell);
 BoardElement * letPlayerSelectBoardElement();
+string letPlayerSelectOption(string pre_text, vector<string> options, string post_text);
 
 
 int main(int argc, char *args[]) {
@@ -1451,38 +1452,40 @@ int handle_ranged_mode_input() {
     return 1;
 }
 
-string get_level_up_screen_message() {
-    string message = "LEVEL UP\n";
-    message += "Strength: " + to_string(player->strength_level) + "\tDexterity: ";
-    message += to_string(player->dexterity_level) + "\tIntelligence: ";
-    message += to_string(player->intelligence_level);
-    message += "\n\nSelect skill to level up:\n";
-    message += "Strength\nDexterity\nIntelligence";
-    message += "\n\nSkill Points: " + to_string(player->skill_points);
-    message += "\n\n(Press esc to exit)";
-    return message;
+string buildSelectionMessage(string pre_text, vector<string> options, string post_text) {
+    string str = pre_text;
+    for (int i = 0; i < options.size(); i++) {
+        str += options[i] + "\n";
+    }
+    return str + post_text;
 }
 
-void show_level_up_screen() {
-    clear();
-    string message = get_level_up_screen_message();
-    add_temp_message(message);
-    int current_y = 4;
-    int prev_y = 4;
+map<int, string> getKeyToWordMapForSelectionBody(string body, vector<string> options) {
     map<int, string> key_to_word_map;
-    key_to_word_map[4] = "Strength";
-    key_to_word_map[5] = "Dexterity";
-    key_to_word_map[6] = "Intelligence";
+    vector<string> lines = split(body, "\n");
+    for (int i = 0; i < lines.size(); i++) {
+       string line = lines[i];
+       if (find(options.begin(), options.end(), line) != options.end()) {
+            key_to_word_map[i] = line;
+       }
+    }
+    return key_to_word_map;
+}
+
+string letPlayerSelectOption(string pre_text, vector<string> options, string post_text) {
+    clear();
+    string msg = buildSelectionMessage(pre_text, options, post_text);
+    add_temp_message(msg);
+    map<int, string> key_to_word_map = getKeyToWordMapForSelectionBody(msg, options);
+    vector<int> keys = getKeysFromMap(key_to_word_map);
+    sort(keys.begin(), keys.end());
+    int current_y = keys[0];
+    int prev_y = keys[0];
     while (true) {
-        if (player->skill_points) {
-            mvprintw(prev_y, 0, key_to_word_map[prev_y].c_str());
-            attron(A_REVERSE);
-            mvprintw(current_y, 0, key_to_word_map[current_y].c_str());
-            attroff(A_REVERSE);
-        }
-        else {
-            curs_set(0);
-        }
+        mvprintw(prev_y, 0, key_to_word_map[prev_y].c_str());
+        attron(A_REVERSE);
+        mvprintw(current_y, 0, key_to_word_map[current_y].c_str());
+        attroff(A_REVERSE);
 
         prev_y = current_y;
 
@@ -1497,25 +1500,47 @@ void show_level_up_screen() {
             current_y --;
         }
         else if (input == 13 || input == 10) { // enter
-            if (player->skill_points == 0) {
-                continue;
-            }
-            try{
-                player->levelUpSkill(key_to_word_map[current_y]);
-            }
-            catch(exception &e) {
-                clear();
-                string message = get_level_up_screen_message();
-                add_temp_message(message + "\n\nError: " + e.what());
-                continue;
-            }
-            clear();
-            string message = get_level_up_screen_message();
-            message += "\n\n" + key_to_word_map[current_y] + " increased!";
-            add_temp_message(message);
+            return key_to_word_map[current_y];
         }
-        current_y = max(current_y, 4);
-        current_y = min(current_y, 6);
+        current_y = max(current_y, keys[0]);
+        current_y = min(current_y, keys[keys.size() - 1]);
+    }
+    return "";
+}
+
+void show_level_up_screen() {
+    string additional_message = "";
+    while(player->skill_points) {
+        string pre_message = "LEVEL UP\n";
+        pre_message += "Strength: " + to_string(player->strength_level) + "\tDexterity: ";
+        pre_message += to_string(player->dexterity_level) + "\tIntelligence: ";
+        pre_message += to_string(player->intelligence_level);
+        pre_message += "\n\nSelect skill to level up:\n";
+        vector<string> options;
+        options.push_back("Strength");
+        options.push_back("Dexterity");
+        options.push_back("Intelligence");
+        string post_message = "\n\nSkill Points: " + to_string(player->skill_points);
+        if (!additional_message.empty()) {
+            post_message += "\n\n" + additional_message;
+        }
+        post_message += "\n\n(Press esc to exit)";
+        additional_message = "";
+
+        string selection = letPlayerSelectOption(pre_message, options, post_message);
+        if (selection.empty()) {
+            break;
+        }
+        try {
+            player->levelUpSkill(selection);
+        }
+        catch(exception &e) {
+            clear();
+            additional_message = e.what();
+            continue;
+        }
+        clear();
+        additional_message = selection + " increased!";
     }
     center_board_on_player();
     add_temp_message("It's your turn");

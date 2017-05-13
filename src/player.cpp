@@ -475,7 +475,8 @@ bool Player :: hasRangedWeapon() {
 
 Player :: Player() : Character() {
     experience = 0;
-    skill_points = 0;
+    //skill_points = 0;
+    skill_points = 3;
     level = 1;
     attack_damage = new Numeric("0+1d10");
     speed = 20;

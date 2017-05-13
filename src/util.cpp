@@ -66,3 +66,11 @@ int random_int(int min_num, int max_num) {
     uniform_int_distribution<int> uni(min_num, max_num);
     return uni(rng);
 }
+
+vector<int> getKeysFromMap(map<int, string> m) {
+    vector<int> v;
+    for(map<int, string>::iterator it = m.begin(); it != m.end(); it++) {
+        v.push_back(it->first);
+    }
+    return v;
+}
