@@ -11,7 +11,7 @@ class Player : public Character {
     private:
         static const int MAX_INVENTORY_SIZE = 10;
         static const int DEFAULT_MAX_CARRYING_WEIGHT = 150;
-        static const int MAX_HITPOINTS = 100;
+        static const int MAX_HITPOINTS = 150;
         static const int DEFAULT_MAX_STAMINA = 50;
         static const int DEFAULT_LIGHT_RADIUS = 5;
         static const int DEFAULT_MAX_MAGIC = 50;
@@ -23,6 +23,7 @@ class Player : public Character {
         int getEquipmentWeight();
         int getInventoryWeight();
         int getMaxCarryWeight();
+        void addSpell(Object * spell);
 
     public:
         bool hasObject(Object *);
@@ -58,9 +59,10 @@ class Player : public Character {
         void regenerateStamina(int turn);
         string getStatusProgressBar(float base_percentage);
         int getDamageForSpell(Object * spell);
-        void reduceMagicFromDamage(int damage);
+        void reduceMagicFromSpell(int damage);
         void regenerateMagic(int turn);
-        bool hasEnoughMagicForAttack(int damage);
+        bool hasEnoughMagicForSpell(int damage);
+        void restoreHealth(int amount);
 
         // Variables
         int level;

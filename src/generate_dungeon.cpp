@@ -97,6 +97,7 @@ static int SHOW_HELP = 0;
 static int MAX_ROOM_WIDTH = DEFAULT_MAX_ROOM_WIDTH;
 static int MAX_ROOM_HEIGHT = DEFAULT_MAX_ROOM_HEIGHT;
 
+void add_experience_to_player(int amount);
 void display_magic_status_at_row(int row);
 void add_temp_message(string message);
 void handle_killed_monster(Monster * monster);
@@ -221,8 +222,9 @@ int main(int argc, char *args[]) {
                 break;
             }
             int index = get_room_index_player_is_in();
-            if (index != -1) {
+            if (index != -1 && !rooms[index].has_explored) {
                 rooms[index].has_explored = true;
+                add_experience_to_player(player->level * 2);
             }
             center_board_on_player();
             refresh();
@@ -289,6 +291,14 @@ int main(int argc, char *args[]) {
     object_templates.clear();
 
     return 0;
+}
+
+void add_experience_to_player(int amount) {
+    int prev_level = player->level;
+    player->addExperience(amount);
+    if (player->level != prev_level) {
+        add_message("You leveled up!");
+    }
 }
 
 int get_number_of_explored_rooms() {
@@ -373,7 +383,7 @@ bool is_in_line_of_sight(struct Coordinate start_coord, struct Coordinate end_co
 }
 
 bool damage_monster_from_magic(Monster * monster, int damage) {
-    player->reduceMagicFromDamage(damage);
+    player->reduceMagicFromSpell(damage);
     return damage_monster(monster, damage);
 }
 
@@ -388,6 +398,7 @@ bool damage_monster(Monster * monster, int damage) {
         return true;
     }
     monster->damage(damage);
+    add_experience_to_player(ceil(damage * 0.1));
     int remaining = monster->hitpoints;
     add_message("You deal " + to_string(damage) + " points of damage to the monster (" + to_string(max(remaining, 0)) + " pts remain)");
     bool isAlive = monster->isAlive();
@@ -461,6 +472,11 @@ void generate_objects_from_templates() {
         struct Coordinate coordinate;
         ObjectTemplate object_template = object_templates[i];
         Object * object = object_template.makeObject();
+        if (object->name.compare("Healing") == 0 || object->name.compare("Fireball") == 0) {
+            objects.push_back(object);
+            player->addObjectToInventory(object);
+            continue;
+        }
         while(true) {
             coordinate = get_random_board_location();
             Board_Cell cell = board[coordinate.y][coordinate.x];
@@ -1249,11 +1265,7 @@ void handle_user_input_for_look_mode(int key) {
 }
 
 void handle_killed_monster(Monster * monster) {
-    int prev_level = player->level;
-    player->addExperience(monster->experience);
-    if (player->level != prev_level) {
-        add_message("You leveled up!");
-    }
+    add_experience_to_player(monster->experience);
     game_queue.removeFromQueue(monster);
     board[monster->y][monster->x].monster = NULL;
     int index = -1;
@@ -1303,10 +1315,8 @@ int handle_cast_mode_input() {
             add_temp_message("Select cell to cast spell");
             move(new_coord.y, new_coord.x);
             int key = getch();
-            add_message(to_string((char) key));
             if (key == 107) { // k - one cell up
                 if (board[local_y - 1][local_x].hardness > 0 || !cell_is_illuminated(board[local_y - 1][local_x])) {
-                    add_message("Skipping");
                     continue;
                 }
                 new_coord.y --;
@@ -1314,7 +1324,6 @@ int handle_cast_mode_input() {
             }
             else if (key == 106) { // j - one cell down
                 if (board[local_y + 1][local_x].hardness > 0 || !cell_is_illuminated(board[local_y + 1][local_x])) {
-                    add_message("Skipping");
                     continue;
                 }
                 new_coord.y ++;
@@ -1379,14 +1388,26 @@ int handle_cast_mode_input() {
                     continue;
                 }
                 int damage = player->getDamageForSpell(spell);
-                if (!player->hasEnoughMagicForAttack(damage)) {
-                    add_temp_message("You do not have enough magic for this attack!");
+                if (!player->hasEnoughMagicForSpell(damage)) {
+                    add_temp_message("You do not have enough magic for that spell!");
                     return 0;
                 }
                 damage_monster_from_magic(board[local_y][local_x].monster, damage);
                 return 1;
             }
         }
+    }
+    else if(spell->name.compare("Healing") == 0) {
+        add_message("You restore some of your health");
+        int healing_amount = spell->defense_bonus;
+        if (!player->hasEnoughMagicForSpell(healing_amount)) {
+           add_message("You do not have enough magic for that spell!");
+           return 0;
+        }
+        player->restoreHealth(healing_amount);
+        player->reduceMagicFromSpell(healing_amount);
+        add_experience_to_player(healing_amount * 0.1);
+        return 1;
     }
     return 0;
 }
@@ -1751,7 +1772,13 @@ int handle_user_input(int key) {
             return 0;
         }
         Object * object = player->getInventoryItemAt(index);
-        player->equipObjectAt(index);
+        try {
+            player->equipObjectAt(index);
+        }
+        catch(const char * e) {
+            add_message(e);
+            return 0;
+        }
         add_message("Equipped " + object->type + ": " + object->name);
         update_player_board();
         center_board_on_player();

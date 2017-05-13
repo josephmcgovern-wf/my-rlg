@@ -3,7 +3,11 @@
 #include <iostream>
 #include <math.h>
 
-void Player :: reduceMagicFromDamage(int damage) {
+void Player :: restoreHealth(int amount) {
+    hitpoints = min(max_hitpoints, hitpoints + amount);
+}
+
+void Player :: reduceMagicFromSpell(int damage) {
     int actual_amount = ceil(damage * 0.7);
     int bonus = 0;
     if (intelligence_level) {
@@ -16,16 +20,16 @@ void Player :: reduceMagicFromDamage(int damage) {
 
 void Player :: regenerateMagic(int turn) {
     int turn_delta = turn - turn_health_regenerated;
-    int regen = (max_magic * 0.008) * turn_delta;
+    int regen = (max_magic * 0.009) * turn_delta;
     magic = min(magic + regen, max_magic);
 }
 
-bool Player :: hasEnoughMagicForAttack(int damage) {
+bool Player :: hasEnoughMagicForSpell(int damage) {
     int bonus = 0;
     if (intelligence_level) {
         bonus = intelligence_level + ceil(pow(intelligence_level + 1, 1.5));
     }
-    return (ceil(damage * 0.7) - bonus) <= magic;
+    return (ceil(damage * 0.5) - bonus) <= magic;
 }
 
 int Player :: getDamageForSpell(Object * spell) {
@@ -39,7 +43,7 @@ int Player :: getDamageForSpell(Object * spell) {
 
 void Player :: regenerateStamina(int turn) {
     int turn_delta = turn - turn_health_regenerated;
-    int regen = (max_stamina_points * 0.01) * turn_delta;
+    int regen = (max_stamina_points * 0.009) * turn_delta;
     stamina_points = min(stamina_points + regen, max_stamina_points);
 }
 
@@ -48,7 +52,7 @@ bool Player :: hasEnoughStaminaForAttack(int damage) {
     if (dexterity_level) {
         bonus = dexterity_level + ceil(pow(dexterity_level + 1, 1.5));
     }
-    return (ceil(damage * 0.7) - bonus) <= stamina_points;
+    return (ceil(damage * 0.5) - bonus) <= stamina_points;
 }
 
 void Player :: reduceStaminaFromDamage(int amount) {
@@ -125,6 +129,9 @@ void Player :: levelUpSkill(string skill) {
     else {
         throw "Invalid skill: " + skill;
     }
+    hitpoints = max_hitpoints;
+    stamina_points = max_stamina_points;
+    magic = max_magic;
     skill_points --;
 }
 
@@ -276,10 +283,20 @@ string Player :: viewInventoryObjectAt(int index) {
     return inventory[index]->description;
 }
 
+void Player :: addSpell(Object * spell) {
+    for(int i = 0; i < spells.size(); i++) {
+        Object * existing_spell = spells[i];
+        if (existing_spell->name.compare(spell->name) == 0) {
+            throw "You have already learned that spell!";
+        }
+    }
+    spells.push_back(spell);
+}
+
 void Player :: equipObjectAt(int index) {
     Object * object = inventory[index];
     if (object && object->type.compare("SPELL") == 0) {
-        spells.push_back(object);
+        addSpell(object);
         inventory.erase(inventory.begin() + index);
     }
     else if (object) {
