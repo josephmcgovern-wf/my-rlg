@@ -3,11 +3,6 @@
 
 using namespace std;
 
-struct Coordinate {
-    int x;
-    int y;
-};
-
 typedef struct {
     int distance;
     int priority;

@@ -78,6 +78,5 @@ class Player : public Character {
 
         // Constructors
         Player();
-        ~Player();
 };
 #endif

@@ -495,7 +495,3 @@ Player :: Player() : Character() {
         equipment.push_back(NULL);
     }
 }
-
-Player :: ~Player() {
-    inventory.clear();
-}

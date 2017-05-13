@@ -17,7 +17,6 @@ class Monster : public Character {
         int getAttackDamage();
         void resetPlayerLocation();
         int getDecimalType();
-        Monster() : Character() {}
-        ~Monster() {};
+        Monster() : Character() {};
 };
 #endif

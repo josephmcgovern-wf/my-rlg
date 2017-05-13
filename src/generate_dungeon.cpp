@@ -18,6 +18,7 @@
 #include <map>
 #include <cmath>
 #include <thread>
+#include <typeinfo>
 
 #include "util.h"
 #include "monster.h"
@@ -1230,14 +1231,14 @@ void display_xp_status_at(int row) {
     row++;
     move(row, 0);
     clrtoeol();
-    int cyan = color_map["CYAN"];
-    attron(COLOR_PAIR(cyan));
+    int yellow = color_map["YELLOW"];
+    attron(COLOR_PAIR(yellow));
     float percentage = player->experience / (1.0*player->getExperienceRequiredForNextLevel());
     if (player->skill_points) {
         percentage = 1;
     }
     mvprintw(row, 0, (player->getStatusProgressBar(percentage)).c_str());
-    attroff(COLOR_PAIR(cyan));
+    attroff(COLOR_PAIR(yellow));
 }
 
 void handle_user_input_for_look_mode(int key) {
@@ -1387,7 +1388,8 @@ int cast_spell(Object * spell) {
             add_temp_message("You do not have enough magic for that spell!");
             return 0;
         }
-        if (typeid(element) != typeid(Monster)) {
+        Monster * m = dynamic_cast<Monster *> (element);
+        if (!m) {
             return cast_spell(spell);
         }
         damage_monster_from_magic((Monster *) element, damage);
@@ -1409,29 +1411,24 @@ int cast_spell(Object * spell) {
 }
 
 int handle_cast_mode_input() {
-    // Determine spell index
-    string title = "Which spell index? ";
-    add_temp_message(title);
-    move(0, title.length());
-    char arr[80];
-    echo();
-    getstr(arr);
-    string str(arr);
-    noecho();
-    int index;
-    try {
-        index = stoi(str);
+    string pre_message = "Select spell to cast\n\n";
+    vector<string> options;
+    for (int i = 0; i < player->spells.size(); i++) {
+        options.push_back(player->spells[i]->name);
     }
-    catch(...) {
-        add_temp_message("Invalid input. It's your turn");
+    string post_message = "\n\n(Press esc to exit)";
+    string selection = letPlayerSelectOption(pre_message, options, post_message);
+    center_board_on_player();
+    if (selection.empty()) {
         return 0;
     }
-    if (index > player->spells.size() - 1 || index < 0) {
-        add_temp_message("No spell at that index. It's still your turn");
-        return 0;
+    for (int i = 0; i < player->spells.size(); i++) {
+        if (player->spells[i]->name.compare(selection) == 0) {
+            return cast_spell(player->spells[i]);
+        }
     }
-    Object * spell = player->spells[index];
-    return cast_spell(spell);
+    add_message("Major borkage in handle_cast_mode_input");
+    return 0;
 }
 
 int handle_ranged_mode_input() {
@@ -1440,7 +1437,8 @@ int handle_ranged_mode_input() {
         add_temp_message("Exited ranged mode. It's still your turn");
         return 0;
     }
-    if (typeid(element) != typeid(Monster)) {
+    Monster * m = dynamic_cast<Monster *> (element);
+    if (!m) {
         return handle_ranged_mode_input();
     }
     int damage = player->getRangedAttackDamage();
@@ -1448,7 +1446,7 @@ int handle_ranged_mode_input() {
         add_message("You do not have enough stamina for this attack!");
         return 0;
     }
-    damage_monster_from_melee_or_ranged((Monster *) element, damage);
+    damage_monster_from_melee_or_ranged(m, damage);
     return 1;
 }
 
