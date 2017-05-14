@@ -388,8 +388,18 @@ bool is_in_line_of_sight(struct Coordinate start_coord, struct Coordinate end_co
 }
 
 bool damage_monster_from_magic(Monster * monster, Object * spell) {
+    int damage = player->getDamageForSpell(spell);
+    int original_hp = monster->hitpoints;
     player->reduceMagicFromSpell(spell->cost);
-    return damage_monster(monster, player->getDamageForSpell(spell));
+    bool result = damage_monster(monster, damage);
+    if (original_hp != monster->hitpoints) { // damaged monster
+        if (spell->name.compare("Vampirism") == 0) {
+            player->restoreHealth(damage);
+            add_message("You convert it into health");
+        }
+
+    }
+    return result;
 }
 
 bool damage_monster_from_melee_or_ranged(Monster * monster, Object * weapon, int damage) {
@@ -483,13 +493,11 @@ void generate_objects_from_templates() {
         struct Coordinate coordinate;
         ObjectTemplate object_template = object_templates[i];
         Object * object = object_template.makeObject();
-        /*
-        if (player->canPickUpObject() && (object->name.compare("Healing") == 0 || object->name.compare("Fireball") == 0 || object->name.compare("Teleport") == 0)) {
+        if (player->canPickUpObject() && object->name.compare("Vampirism") == 0) {
             objects.push_back(object);
             player->addObjectToInventory(object);
             continue;
         }
-        */
         while(true) {
             coordinate = get_random_board_location();
             Board_Cell cell = board[coordinate.y][coordinate.x];
@@ -1384,7 +1392,7 @@ BoardElement * letPlayerSelectBoardElement() {
 }
 
 int cast_spell(Object * spell) {
-    if (spell->name.compare("Fireball") == 0) {
+    if (spell->name.compare("Fireball") == 0 || spell->name.compare("Vampirism") == 0) {
         add_temp_message("Select cell to cast spell");
         BoardElement * element = letPlayerSelectBoardElement();
         if (!element) {

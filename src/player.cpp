@@ -148,7 +148,7 @@ void Player :: addExperience(int xp) {
 }
 
 int Player :: getExperienceRequiredForNextLevel() {
-    return ceil(20 * pow(level + 1, 0.8));
+    return ceil(20 * pow(level + 1, 1.2));
 }
 
 int Player :: getLightRadius() {
@@ -463,6 +463,13 @@ bool Player :: hasObject(Object * o) {
     for (int i = 0; i < equipment.size(); i++) {
         Object * item = equipment[i];
         if (item && item == o) {
+            return true;
+        }
+    }
+
+    for (int i = 0; i < spells.size(); i++) {
+        Object * spell = spells[i];
+        if (spell && spell == o) {
             return true;
         }
     }
