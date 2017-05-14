@@ -319,7 +319,7 @@ int get_number_of_explored_rooms() {
 void update_distances_on_interval() {
     while(1) {
         update_board_distances();
-        usleep(1500000);
+        usleep(1000000);
     }
 }
 void update_board_distances() {
@@ -1666,7 +1666,7 @@ int handle_user_input(int key) {
         string message = "SPELLS\n\n";
         for (int i = 0; i < player->spells.size(); i++) {
             Object * spell = player->spells[i];
-            message += to_string(i + 1) + ": " + spell->name;
+            message += to_string(i + 1) + ": " + spell->name + "\n";
         }
         message += "\n\n";
         message += "(Press any key to return to game view)";
